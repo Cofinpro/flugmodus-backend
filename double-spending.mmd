@@ -1,0 +1,43 @@
+sequenceDiagram
+    participant A as Nutzer A (Betrüger)
+    participant B as Händler B
+    participant C as Händler C
+    participant Backend as Backend
+
+    %% 1. Nutzer A lädt Offline-Guthaben
+    A->>Backend: "Lade 100 Credits offline" (Online)
+    Backend->>A: Bestätigung (Offline-Wallet: 100 Credits)
+
+    %% 2. Nutzer A bezahlt Händler B (Offline)
+    A->>A: Generiere QR-Code (100 Credits → B)
+    A->>B: Zeige QR-Code
+    B->>B: Scan QR-Code (Transaktion: tx_1)
+    B->>B: Speichere lokal (pending)
+    A->>A: Lokale Markierung: "100 Credits an B gezahlt"
+
+    %% 3. Nutzer A bezahlt Händler C (Offline, Double Spending)
+    A->>A: Generiere **denselben QR-Code** (100 Credits → C)
+    A->>C: Zeige QR-Code
+    C->>C: Scan QR-Code (Transaktion: tx_1, **identisch zu tx_1 von B**)
+    C->>C: Speichere lokal (pending)
+
+    %% 4. Händler B synchronisiert
+    B->>Backend: Synchronisiere tx_1 (100 Credits von A an B)
+    Backend->>Backend: Prüfe tx_1
+    Backend->>Backend: Gültig! (Erste Transaktion)
+    Backend->>Backend: Buche 100 Credits von A an B
+    Backend->>Backend: Inkrementiere A's Transaktionszähler
+    Backend->>B: Bestätigung (tx_1 = confirmed)
+
+    %% 5. Händler C synchronisiert (Double Spending erkannt)
+    C->>Backend: Synchronisiere tx_1 (100 Credits von A an C)
+    Backend->>Backend: Prüfe tx_1
+    Backend->>Backend: **Fehler: tx_1 bereits verwendet!**
+    Backend->>Backend: Lehne tx_1 ab
+    Backend->>C: Fehlermeldung: "Double Spending erkannt"
+    Backend->>A: Benachrichtigung: "Double Spending versucht (tx_1)"
+
+    %% 6. Ergebnis
+    Note over A,B: Händler B erhält 100 Credits
+    Note over A,C: Händler C erhält **keine** Credits
+    Note over A: Nutzer A hat **0 Credits offline** (100 Credits wurden an B gebucht)
