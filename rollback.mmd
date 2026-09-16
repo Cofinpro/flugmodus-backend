@@ -1,0 +1,51 @@
+sequenceDiagram
+    participant A as Nutzer A (Betrüger)
+    participant B as Händler B
+    participant C as Händler C
+    participant Backend as Backend
+
+    %% 1. Nutzer A lädt Offline-Guthaben und führt erste Transaktion durch
+    A->>Backend: "Lade 200 Credits offline" (Online)
+    Backend->>A: Bestätigung (Offline-Wallet: 200 Credits, Counter: 0)
+    Note over A: Wallet-Zustand: {balance: 200, version: 1, counter: 0, previous_hash: "genesis"}
+
+    %% 2. Nutzer A bezahlt Händler B (Offline)
+    A->>A: Generiere QR-Code (100 Credits → B, Counter: 1)
+    A->>B: Zeige QR-Code
+    B->>B: Scan QR-Code (Transaktion: tx_1)
+    B->>B: Speichere lokal (pending)
+    A->>A: Lokale Aktualisierung: {balance: 100, version: 2, counter: 1, previous_hash: "hash_v1"}
+    Note over A: Wallet-Zustand: {balance: 100, version: 2, counter: 1}
+
+    %% 3. Nutzer A führt Rollback durch: Stellt alten Wallet-Zustand wieder her
+    A->>A: Rollback: Lade Backup von Wallet-Zustand v1 (balance: 200, counter: 0)
+    Note over A: Betrugsversuch: Wallet zeigt wieder 200 Credits an!
+
+    %% 4. Nutzer A bezahlt Händler C (Offline, mit wiederhergestelltem Guthaben)
+    A->>A: Generiere QR-Code (100 Credits → C, Counter: 1)
+    A->>C: Zeige QR-Code
+    C->>C: Scan QR-Code (Transaktion: tx_2)
+    C->>C: Speichere lokal (pending)
+    A->>A: Lokale Aktualisierung: {balance: 100, version: 2, counter: 1, previous_hash: "hash_v1"}
+
+    %% 5. Händler B synchronisiert (erfolgreich)
+    B->>Backend: Synchronisiere tx_1 (100 Credits von A an B, Counter: 1)
+    Backend->>Backend: Prüfe tx_1
+    Backend->>Backend: Gültig! (Counter: 1 > letzter bekannter Counter: 0)
+    Backend->>Backend: Buche 100 Credits von A an B
+    Backend->>Backend: Aktualisiere A's Wallet: {balance: 100, version: 2, counter: 1}
+    Backend->>B: Bestätigung (tx_1 = confirmed)
+
+    %% 6. Händler C synchronisiert (Rollback wird erkannt!)
+    C->>Backend: Synchronisiere tx_2 (100 Credits von A an C, Counter: 1)
+    Backend->>Backend: Prüfe tx_2
+    Backend->>Backend: **Fehler: Counter 1 <= letzter bekannter Counter 1!**
+    Backend->>Backend: Prüfe Wallet-Zustand: version 2 vs. erwartete version 3
+    Backend->>Backend: **Rollback erkannt!** (previous_hash stimmt nicht mit version 2 überein)
+    Backend->>C: Fehlermeldung: "Rollback erkannt – ungültiger Wallet-Zustand"
+    Backend->>A: Benachrichtigung: "Rollback-Versuch erkannt (tx_2)"
+
+    %% 7. Ergebnis
+    Note over A,B: Händler B erhält 100 Credits (gültig)
+    Note over A,C: Händler C erhält **keine** Credits (Rollback blockiert)
+    Note over A: Nutzer A's Wallet wird auf {balance: 100, version: 2, counter: 1} zurückgesetzt
