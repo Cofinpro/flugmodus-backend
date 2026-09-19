@@ -4,4 +4,6 @@ version = "0.1.0"
 description = "'Secure' offline payments and 'settlement'. Cofinpro Coding Dojo 2026 :)"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "fastapi>=0.141.1",
+]
