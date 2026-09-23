@@ -10,3 +10,7 @@ dependencies = [
 
 [tool.fastapi]
 entrypoint = "main:app"
+[dependency-groups]
+dev = [
+    "pre-commit>=4.6.2",
+]
