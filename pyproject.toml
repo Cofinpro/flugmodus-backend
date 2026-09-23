@@ -5,5 +5,8 @@ description = "'Secure' offline payments and 'settlement'. Cofinpro Coding Dojo 
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "fastapi>=0.141.1",
+    "fastapi[standard]>=0.141.1",
 ]
+
+[tool.fastapi]
+entrypoint = "main:app"
