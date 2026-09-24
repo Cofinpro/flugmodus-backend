@@ -15,3 +15,9 @@ Direct commits to `main` are blocked.
 
 - Run on all files: `uv run pre-commit run --all-files`
 - Update hook versions: `uv run pre-commit autoupdate`
+
+## Anwendung starten
+
+```sh
+uv run fastapi dev
+```
