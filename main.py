@@ -2,12 +2,15 @@
 
 import asyncio
 import json
+import os
 import secrets
 from collections.abc import Generator
 from contextlib import asynccontextmanager
 from typing import Annotated
+from urllib.parse import urlencode
 
 import segno
+from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, StreamingResponse
@@ -54,7 +57,10 @@ with open("keys/keys.json") as keys_file:
 
 SESSIONS = {}
 
-PUBLIC_URL = "https://monetize-cubbyhole-matron.ngrok-free.dev"
+load_dotenv()
+# Adressen kommen aus .env (Vorlage: .env.example)
+BACKEND_PUBLIC_URL = os.environ["BACKEND_PUBLIC_URL"].rstrip("/")
+FRONTEND_URL = os.environ["FRONTEND_URL"].rstrip("/")
 templates = Jinja2Templates(directory="templates")
 
 
@@ -109,10 +115,22 @@ def parse_hex_values(hex_values: list[str]) -> list[bytes]:
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request) -> HTMLResponse:
-    qr_svg = segno.make(PUBLIC_URL, error="m").svg_inline(
-        scale=8, border=0, dark="#121419", omitsize=True
+    # Registrieren: Handy-Kamera öffnet direkt die Signup-Seite der App, die Backend-Adresse reist mit.
+    # Mit Schrägstrich: GitHub Pages liefert dort dist/signup/index.html ohne Umleitung aus.
+    # Anmelden: wie bisher die Backend-Adresse, für den Scanner in der App.
+    signup_link = f"{FRONTEND_URL}/signup/?{urlencode({'backend': BACKEND_PUBLIC_URL})}"
+    qr = {
+        mode: segno.make(content, error="m").svg_inline(
+            scale=8, border=0, dark="#121419", omitsize=True
+        )
+        for mode, content in {
+            "signup": signup_link,
+            "signin": BACKEND_PUBLIC_URL,
+        }.items()
+    }
+    return templates.TemplateResponse(
+        request, "home.html", {"signup_qr": qr["signup"], "signin_qr": qr["signin"]}
     )
-    return templates.TemplateResponse(request, "home.html", {"qr_svg": qr_svg})
 
 
 @app.post(
@@ -154,10 +172,11 @@ def arrivals(session: SessionDep) -> list[str]:
 
 
 @app.get("/api/events")
-async def events() -> StreamingResponse:
+async def events(request: Request) -> StreamingResponse:
     """Transaktions-Ticker für die Startseite (Server-Sent Events)."""
+    last_event_id = request.headers.get("last-event-id", "")
     return StreamingResponse(
-        bus.stream(),
+        bus.stream(int(last_event_id) if last_event_id.isdigit() else None),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
