@@ -8,7 +8,8 @@ dependencies = [
     "cryptography>=50.0.1",
     "fastapi[standard]>=0.141.1",
     "sqlmodel>=0.0.47",
-    "ruff>=0.16.9"
+    "ruff>=0.16.9",
+    "sqladmin>=0.32.0",
 ]
 
 [tool.fastapi]

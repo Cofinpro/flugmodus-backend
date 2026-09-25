@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Field, Session, SQLModel, select
 
+from admin import setup_admin
 from models import Account, AccountPublic, create_db_and_tables, engine
 from schemas import (
     IssueFinishRequest,
@@ -42,6 +43,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+setup_admin(app, engine)
 
 app.add_middleware(
     CORSMiddleware,
