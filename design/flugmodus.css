@@ -1,0 +1,653 @@
+/*
+ * Flugmodus Design Language – Tokens und Bausteine.
+ * Doku und Regeln: design/README.md · Vorschau: design/styleguide.html
+ * Alle Klassen und Variablen tragen das Präfix fm-, damit nichts kollidiert.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap");
+
+/* ---------- Tokens ---------- */
+:root {
+  /* Himmel: die Bühne, nie Inhalt */
+  --fm-sky-top: #0d1533;
+  --fm-sky: #070911;
+  --fm-glow-blue: rgb(59 91 255 / 0.28);
+  --fm-glow-amber: rgb(255 181 71 / 0.16);
+
+  /* Papier: alles, was man lesen oder anfassen soll */
+  --fm-paper: #f3eee4;
+  --fm-paper-edge: #e4dccd;
+  --fm-paper-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.55), transparent 40%);
+  --fm-ink: #121419;
+  --fm-ink-soft: #6b6457;
+
+  /* Akzent: genau einer – Amber heißt „hier passiert was“ */
+  --fm-amber: #ffb547;
+  --fm-amber-deep: #e8891c;
+
+  /* Status */
+  --fm-green: #1fbf6a;
+  --fm-red: #c2381f;
+
+  /* Form */
+  --fm-radius-ticket: 22px;
+  --fm-radius: 14px;
+  --fm-radius-small: 10px;
+  --fm-notch: 15px;
+  --fm-line: 1.5px;
+  --fm-shadow-ticket: drop-shadow(0 30px 60px rgb(0 0 0 / 0.55)) drop-shadow(0 2px 6px rgb(0 0 0 / 0.3));
+
+  /* Schrift */
+  --fm-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --fm-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --fm-serif: "Instrument Serif", ui-serif, Georgia, serif;
+
+  /* Bewegung */
+  --fm-ease-arrive: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* ---------- Seite & Himmel ---------- */
+.fm-page,
+.fm-page *,
+.fm-page *::before,
+.fm-page *::after { box-sizing: border-box; }
+
+.fm-page {
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(60% 50% at 18% 12%, var(--fm-glow-blue), transparent 70%),
+    radial-gradient(50% 45% at 88% 92%, var(--fm-glow-amber), transparent 70%),
+    linear-gradient(180deg, var(--fm-sky-top), var(--fm-sky) 70%) fixed;
+  color: var(--fm-ink);
+  font-family: var(--fm-sans);
+  -webkit-font-smoothing: antialiased;
+}
+/* Filmkorn über allem */
+.fm-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.09;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* Inhalt mittig auf den Himmel legen */
+.fm-center {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 32px 16px;
+}
+.fm-stack { display: grid; gap: 28px; justify-items: center; width: 100%; }
+
+/* Von sky.js erzeugt */
+.fm-sky { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.fm-sky .fm-sky-route { fill: none; stroke: rgb(255 255 255 / 0.16); stroke-width: 1.5; stroke-dasharray: 2 10; stroke-linecap: round; }
+.fm-sky .fm-sky-plane { fill: var(--fm-amber); filter: drop-shadow(0 0 8px rgb(255 181 71 / 0.8)); }
+.fm-star {
+  --t: 0;
+  fill: #fff;
+  opacity: calc(0.5 + 0.5 * var(--t));
+  transform: scale(calc(1 + 1.8 * var(--t)));
+  transform-box: fill-box;
+  transform-origin: center;
+  filter: drop-shadow(0 0 calc(4px * var(--t)) #fff) drop-shadow(0 0 calc(14px * var(--t)) rgb(160 190 255 / 0.9));
+  transition: opacity 0.5s ease, transform 0.5s ease, filter 0.5s ease;
+}
+.fm-meteors { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
+.fm-meteor {
+  position: absolute;
+  width: 160px;
+  height: 1.5px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(255 255 255 / 0), rgb(200 215 255 / 0.5) 60%, #fff);
+  transform-origin: 100% 50%;
+  will-change: transform, opacity;
+}
+.fm-meteor::after {
+  content: "";
+  position: absolute;
+  right: -2px;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #fff;
+  transform: translateY(-50%);
+  box-shadow: 0 0 8px 2px rgb(255 255 255 / 0.8), 0 0 18px 4px rgb(160 190 255 / 0.5);
+}
+/* Pixel-Funkeln (Nyan) – FlugmodusSky.sparkle(x, y) */
+.fm-sparkle {
+  position: fixed;
+  z-index: 1;
+  width: 4px;
+  height: 4px;
+  background: var(--c, #fff);
+  pointer-events: none;
+  box-shadow: 4px 0 var(--c, #fff), -4px 0 var(--c, #fff), 0 4px var(--c, #fff), 0 -4px var(--c, #fff);
+  animation: fm-twinkle 0.9s steps(1) forwards;
+}
+@keyframes fm-twinkle {
+  0% { transform: scale(0.5); }
+  20% { transform: scale(1); }
+  45% { transform: scale(1.6); box-shadow: 8px 0 var(--c, #fff), -8px 0 var(--c, #fff), 0 8px var(--c, #fff), 0 -8px var(--c, #fff); background: transparent; }
+  70% { transform: scale(1.2) rotate(45deg); opacity: 0.8; }
+  90% { transform: scale(0.6) rotate(45deg); opacity: 0.5; }
+  100% { opacity: 0; }
+}
+
+/* ---------- Ticket: der Hauptbaustein ---------- */
+/* Standard hochkant (Handy). Mit fm-ticket--wide ab 761px quer, Abriss rechts. */
+.fm-ticket {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: min(440px, 100%);
+  filter: var(--fm-shadow-ticket);
+}
+.fm-ticket--arrive { animation: fm-arrive 900ms var(--fm-ease-arrive) both; }
+@keyframes fm-arrive {
+  from { opacity: 0; transform: translateY(28px) rotate(-1.2deg); }
+  to { opacity: 1; transform: none; }
+}
+
+.fm-ticket-main,
+.fm-ticket-stub,
+.fm-card { background: var(--fm-paper-sheen), var(--fm-paper); }
+
+.fm-ticket-main {
+  padding: 28px 24px 26px;
+  border-radius: var(--fm-radius-ticket) var(--fm-radius-ticket) 0 0;
+  -webkit-mask-image:
+    radial-gradient(circle at 0 100%, #0000 var(--fm-notch), #000 calc(var(--fm-notch) + 0.5px)),
+    radial-gradient(circle at 100% 100%, #0000 var(--fm-notch), #000 calc(var(--fm-notch) + 0.5px));
+  mask-image:
+    radial-gradient(circle at 0 100%, #0000 var(--fm-notch), #000 calc(var(--fm-notch) + 0.5px)),
+    radial-gradient(circle at 100% 100%, #0000 var(--fm-notch), #000 calc(var(--fm-notch) + 0.5px));
+}
+.fm-ticket-stub {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 30px 24px 32px;
+  border-radius: 0 0 var(--fm-radius-ticket) var(--fm-radius-ticket);
+  background-image: linear-gradient(90deg, var(--fm-paper-edge) 50%, transparent 0), var(--fm-paper-sheen);
+  background-size: 14px 2px, auto;
+  background-repeat: repeat-x, no-repeat;
+  background-position: var(--fm-notch) 0, 0 0;
+  -webkit-mask-image:
+    radial-gradient(circle at 0 0, #0000 var(--fm-notch), #000 calc(var(--fm-notch) + 0.5px)),
+    radial-gradient(circle at 100% 0, #0000 var(--fm-notch), #000 calc(var(--fm-notch) + 0.5px));
+  mask-image:
+    radial-gradient(circle at 0 0, #0000 var(--fm-notch), #000 calc(var(--fm-notch) + 0.5px)),
+    radial-gradient(circle at 100% 0, #0000 var(--fm-notch), #000 calc(var(--fm-notch) + 0.5px));
+}
+/* Ticket ohne Abriss: Hauptteil unten ebenfalls rund */
+.fm-ticket-main:only-child { border-radius: var(--fm-radius-ticket); -webkit-mask-image: none; mask-image: none; }
+
+@media (min-width: 761px) {
+  .fm-ticket--wide { grid-template-columns: minmax(0, 1fr) auto; width: min(880px, 100%); }
+  .fm-ticket--wide .fm-ticket-main {
+    padding: 36px 40px 32px;
+    border-radius: var(--fm-radius-ticket) 0 0 var(--fm-radius-ticket);
+    -webkit-mask-image:
+      radial-gradient(circle at 100% 0, #0000 var(--fm-notch), #000 calc(var(--fm-notch) + 0.5px)),
+      radial-gradient(circle at 100% 100%, #0000 var(--fm-notch), #000 calc(var(--fm-notch) + 0.5px));
+    mask-image:
+      radial-gradient(circle at 100% 0, #0000 var(--fm-notch), #000 calc(var(--fm-notch) + 0.5px)),
+      radial-gradient(circle at 100% 100%, #0000 var(--fm-notch), #000 calc(var(--fm-notch) + 0.5px));
+  }
+  .fm-ticket--wide .fm-ticket-stub {
+    padding: 32px 36px;
+    border-radius: 0 var(--fm-radius-ticket) var(--fm-radius-ticket) 0;
+    background-image: linear-gradient(var(--fm-paper-edge) 50%, transparent 0), var(--fm-paper-sheen);
+    background-size: 2px 14px, auto;
+    background-repeat: repeat-y, no-repeat;
+    background-position: 0 var(--fm-notch), 0 0;
+    -webkit-mask-image:
+      radial-gradient(circle at 0 0, #0000 var(--fm-notch), #000 calc(var(--fm-notch) + 0.5px)),
+      radial-gradient(circle at 0 100%, #0000 var(--fm-notch), #000 calc(var(--fm-notch) + 0.5px));
+    mask-image:
+      radial-gradient(circle at 0 0, #0000 var(--fm-notch), #000 calc(var(--fm-notch) + 0.5px)),
+      radial-gradient(circle at 0 100%, #0000 var(--fm-notch), #000 calc(var(--fm-notch) + 0.5px));
+  }
+}
+/* Nur mask-image verwenden: der mask-Shorthand würde mask-composite zurücksetzen */
+.fm-ticket-main,
+.fm-ticket-stub { -webkit-mask-composite: source-in; mask-composite: intersect; }
+
+/* Karte: Papier ohne Abriss, z. B. für Listen oder Formulare */
+.fm-card {
+  width: min(440px, 100%);
+  padding: 28px 24px;
+  border-radius: var(--fm-radius-ticket);
+  filter: var(--fm-shadow-ticket);
+}
+
+/* ---------- Kopfzeile ---------- */
+.fm-ticket-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.fm-brand { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
+.fm-logo {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--fm-ink);
+  color: var(--fm-amber);
+}
+.fm-logo svg { width: 20px; height: 20px; transform: rotate(45deg); }
+.fm-tag {
+  font-family: var(--fm-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 7px 12px;
+  border: var(--fm-line) solid var(--fm-ink);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* ---------- Route: A → B in großen Codes ---------- */
+.fm-route { display: grid; grid-template-columns: auto 1fr auto; align-items: end; gap: 12px; margin: 26px 0 24px; }
+.fm-port-code { display: block; font-size: clamp(48px, 11vw, 88px); font-weight: 700; line-height: 0.82; letter-spacing: -0.045em; }
+.fm-port-label {
+  display: block;
+  margin-top: 12px;
+  font-family: var(--fm-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fm-ink-soft);
+}
+.fm-port--to { text-align: right; }
+.fm-port--to .fm-port-code { color: transparent; -webkit-text-stroke: 2px var(--fm-ink); }
+.fm-route-path { position: relative; align-self: center; height: 2px; margin-bottom: 26px; }
+.fm-route-path::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(90deg, var(--fm-ink) 50%, transparent 0);
+  background-size: 10px 2px;
+  opacity: 0.75;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(50% - 20px), #0000 0 calc(50% + 20px), #000 0);
+  mask-image: linear-gradient(90deg, #000 calc(50% - 20px), #0000 0 calc(50% + 20px), #000 0);
+}
+.fm-route-path svg {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  transform: translate(-50%, -50%) rotate(90deg);
+  color: var(--fm-amber-deep);
+}
+@media (min-width: 761px) { .fm-ticket--wide .fm-route { gap: 20px; margin: 34px 0 30px; } }
+
+/* ---------- Felder: Label oben (mono), Wert darunter ---------- */
+.fm-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px 12px;
+  margin: 0;
+  padding-top: 26px;
+  border-top: var(--fm-line) solid var(--fm-ink);
+}
+.fm-fields--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.fm-field dt,
+.fm-label {
+  font-family: var(--fm-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fm-ink-soft);
+}
+.fm-field dd { margin: 6px 0 0; font-size: 16px; font-weight: 500; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.fm-hot { color: var(--fm-amber-deep); font-weight: 700; }
+@media (min-width: 761px) { .fm-ticket--wide .fm-fields { gap: 22px 18px; } .fm-ticket--wide .fm-field dd { font-size: 19px; } }
+
+/* Überschrift im Stub, z. B. „Scannen & einsteigen“ */
+.fm-kicker {
+  font-family: var(--fm-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* ---------- Text ---------- */
+.fm-title { margin: 0; font-size: 26px; font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; }
+.fm-tagline { margin: 30px 0 0; font-size: 19px; font-weight: 500; letter-spacing: -0.02em; }
+.fm-tagline em,
+.fm-title em { font-family: var(--fm-serif); font-style: italic; font-weight: 400; font-size: 1.2em; }
+.fm-muted { color: var(--fm-ink-soft); }
+@media (min-width: 761px) { .fm-ticket--wide .fm-tagline { font-size: 22px; } }
+
+/* Betrag: groß wie ein Flughafen-Code, Währung klein daneben */
+.fm-amount { display: inline-flex; align-items: baseline; gap: 6px; font-size: clamp(56px, 14vw, 96px); font-weight: 700; line-height: 0.9; letter-spacing: -0.045em; }
+.fm-amount small { font-size: 0.38em; font-weight: 500; letter-spacing: 0; }
+
+/* ---------- QR-Rahmen mit Amber-Ecken ---------- */
+.fm-qr { position: relative; padding: 14px; border-radius: 16px; background: #fff; box-shadow: inset 0 0 0 var(--fm-line) var(--fm-ink); }
+.fm-qr svg,
+.fm-qr img,
+.fm-qr canvas { display: block; width: min(240px, 62vw); height: auto; }
+.fm-qr::before,
+.fm-qr::after { content: ""; position: absolute; width: 26px; height: 26px; border: 3px solid var(--fm-amber-deep); }
+.fm-qr::before { top: -9px; left: -9px; border-right: 0; border-bottom: 0; border-radius: 10px 0 0 0; }
+.fm-qr::after { bottom: -9px; right: -9px; border-left: 0; border-top: 0; border-radius: 0 0 10px 0; }
+@media (min-width: 761px) { .fm-ticket--wide .fm-qr svg { width: 216px; } }
+
+/* ---------- Status mit pulsierendem Punkt ---------- */
+.fm-status {
+  --dot: var(--fm-green);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--fm-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fm-ink-soft);
+}
+.fm-status::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dot);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--dot) 20%, transparent);
+  animation: fm-pulse 1.6s ease-in-out infinite;
+}
+.fm-status--wait { --dot: var(--fm-amber-deep); }
+.fm-status--error { --dot: var(--fm-red); color: var(--fm-red); }
+.fm-status--idle::before { animation: none; }
+@keyframes fm-pulse { 50% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--dot) 0%, transparent); } }
+
+/* ---------- Buttons ---------- */
+.fm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px 22px;
+  border: var(--fm-line) solid var(--fm-ink);
+  border-radius: var(--fm-radius);
+  background: var(--fm-ink);
+  color: var(--fm-paper);
+  font: 600 16px/1 var(--fm-sans);
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.12s ease;
+}
+.fm-btn:hover { color: var(--fm-amber); }
+.fm-btn:active { transform: translateY(1px); }
+.fm-btn:focus-visible { outline: 3px solid var(--fm-amber); outline-offset: 3px; }
+.fm-btn svg { width: 18px; height: 18px; }
+/* Genau eine Hauptaktion pro Screen */
+.fm-btn--accent { background: var(--fm-amber); color: var(--fm-ink); }
+.fm-btn--accent:hover { background: var(--fm-amber-deep); color: var(--fm-ink); }
+.fm-btn--ghost { background: transparent; color: var(--fm-ink); }
+.fm-btn--ghost:hover { background: var(--fm-ink); color: var(--fm-paper); }
+.fm-btn--block { width: 100%; }
+.fm-btn:disabled,
+.fm-btn[aria-disabled="true"] { opacity: 0.45; pointer-events: none; }
+.fm-actions { display: grid; gap: 10px; margin-top: 26px; }
+.fm-actions--row { grid-auto-flow: column; grid-auto-columns: 1fr; }
+
+/* ---------- Eingabe: Label wie ein Ticketfeld, Linie statt Kasten ---------- */
+.fm-input { display: grid; gap: 6px; }
+.fm-input > span {
+  font-family: var(--fm-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fm-ink-soft);
+}
+.fm-input input,
+.fm-input select {
+  width: 100%;
+  padding: 8px 0 10px;
+  border: 0;
+  border-bottom: var(--fm-line) solid var(--fm-ink);
+  border-radius: 0;
+  background: transparent;
+  color: var(--fm-ink);
+  font: 500 22px/1.2 var(--fm-sans);
+  letter-spacing: -0.01em;
+  outline: none;
+  appearance: none;
+}
+.fm-input input::placeholder { color: color-mix(in srgb, var(--fm-ink-soft) 60%, transparent); }
+.fm-input input:focus,
+.fm-input select:focus { border-bottom-color: var(--fm-amber-deep); box-shadow: 0 1.5px 0 var(--fm-amber-deep); }
+.fm-input--invalid input { border-bottom-color: var(--fm-red); }
+.fm-input small { font-size: 13px; color: var(--fm-ink-soft); }
+.fm-input--invalid small { color: var(--fm-red); }
+
+/* ---------- Hinweise ---------- */
+.fm-notice {
+  --tone: var(--fm-ink);
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border: var(--fm-line) solid var(--tone);
+  border-radius: var(--fm-radius-small);
+  background: color-mix(in srgb, var(--tone) 7%, transparent);
+  color: var(--tone);
+  font-size: 15px;
+  line-height: 1.4;
+}
+.fm-notice--ok { --tone: #13854a; }
+.fm-notice--warn { --tone: #9a5a0c; }
+.fm-notice--error { --tone: var(--fm-red); }
+
+/* Trennlinie wie im Ticket */
+.fm-rule { height: 0; margin: 24px 0; border: 0; border-top: var(--fm-line) solid var(--fm-ink); }
+.fm-rule--perforated { border-top-style: dashed; border-color: var(--fm-paper-edge); border-top-width: 2px; }
+
+/* ---------- Log: Live-Tabelle wie eine Abflugtafel auf Papier ----------
+ * <section class="fm-card fm-log"> mit .fm-log-head, Kopfzeile .fm-log-row--head
+ * und .fm-log-body. Jede Zeile: .fm-log-row > .fm-log-cells > Zellen.
+ * Zellen: .fm-log-time, .fm-log-code (--new Amber, --pay Grün, --alert Rot),
+ * .fm-log-who, .fm-log-what (--alert), .fm-log-amount (--in / --out).
+ * .fm-log-row--fresh klappt eine neue Zeile auf, .fm-log-row--leaving klappt sie zu.
+ */
+.fm-log {
+  --fm-log-cols: 64px 84px minmax(0, 1fr) minmax(0, 1.5fr) 72px;
+  width: min(440px, 100%);
+  padding: 26px 24px 18px;
+}
+@media (min-width: 761px) { .fm-log--wide { width: min(880px, 100%); padding: 30px 40px 22px; } }
+.fm-log-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.fm-log-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+.fm-log-title em { font-family: var(--fm-serif); font-style: italic; font-weight: 400; font-size: 1.15em; }
+.fm-log-row { display: grid; grid-template-rows: 1fr; }
+.fm-log-cells {
+  display: grid;
+  grid-template-columns: var(--fm-log-cols);
+  align-items: center;
+  gap: 16px;
+  min-height: 0;
+  overflow: hidden;
+  border-top: 1px solid var(--fm-paper-edge);
+}
+.fm-log-cells > * { padding: 12px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fm-log-row--head .fm-log-cells { border-top: 0; border-bottom: var(--fm-line) solid var(--fm-ink); }
+.fm-log-row--head .fm-log-cells > * {
+  padding: 0 0 10px;
+  font-family: var(--fm-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fm-ink-soft);
+}
+.fm-log-body .fm-log-row:first-child .fm-log-cells { border-top: 0; }
+.fm-log-num { text-align: right; }
+.fm-log-time { font-family: var(--fm-mono); font-size: 12px; letter-spacing: 0.06em; color: var(--fm-ink-soft); }
+.fm-log-code {
+  justify-self: start;
+  padding: 5px 8px 4px !important;
+  border-radius: 5px;
+  background: var(--fm-ink);
+  color: var(--fm-paper);
+  font-family: var(--fm-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+.fm-log-code--new { background: var(--fm-amber); color: var(--fm-ink); }
+.fm-log-code--pay { background: var(--fm-green); color: var(--fm-ink); }
+.fm-log-code--alert { background: var(--fm-red); color: #fff; }
+.fm-log-who { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+.fm-log-what { font-size: 15px; color: var(--fm-ink-soft); }
+.fm-log-what--alert { color: var(--fm-red); font-weight: 600; }
+.fm-log-amount { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; text-align: right; }
+.fm-log-amount--in { color: #13854a; }
+.fm-log-amount--out { color: var(--fm-amber-deep); }
+.fm-log-empty { padding: 18px 0 8px; font-size: 15px; color: var(--fm-ink-soft); }
+.fm-log-empty em { font-family: var(--fm-serif); font-size: 1.15em; }
+
+/* Neue Zeile: Höhe wächst weich (alles darüber rutscht mit), Inhalt klappt wie ein Fallblatt */
+.fm-log-row--fresh { animation: fm-log-open 600ms var(--fm-ease-arrive) both; }
+.fm-log-row--fresh .fm-log-cells {
+  transform-origin: 50% 0;
+  animation: fm-log-flip 700ms var(--fm-ease-arrive) both, fm-log-glow 2.6s ease-out both;
+}
+.fm-log-row--leaving { animation: fm-log-close 500ms ease both; }
+@keyframes fm-log-open { from { grid-template-rows: 0fr; } to { grid-template-rows: 1fr; } }
+@keyframes fm-log-close { from { grid-template-rows: 1fr; opacity: 1; } to { grid-template-rows: 0fr; opacity: 0; } }
+@keyframes fm-log-flip {
+  from { opacity: 0; transform: perspective(400px) rotateX(-75deg); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fm-log-glow {
+  0%, 35% { background: color-mix(in srgb, var(--fm-amber) 24%, transparent); }
+  100% { background: transparent; }
+}
+
+@media (max-width: 760px) {
+  .fm-log { --fm-log-cols: 64px minmax(0, 1fr) 56px; }
+  .fm-log-time,
+  .fm-log-what { display: none; }
+}
+
+/* ---------- Skin für bestehende Apps ----------
+ * class="fm-skin" an die Wurzel der App (z. B. <body> oder #app) geben:
+ * normale Elemente bekommen den Flugmodus-Look, ohne dass Markup geändert wird.
+ * Bewusst niedrige Spezifität – eigene Klassen der App gewinnen weiterhin.
+ */
+.fm-skin {
+  color: var(--fm-ink);
+  font-family: var(--fm-sans);
+  -webkit-font-smoothing: antialiased;
+}
+.fm-skin :where(h1, h2, h3, h4) { margin: 0 0 0.5em; font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; }
+.fm-skin :where(h1) { font-size: clamp(30px, 7vw, 40px); letter-spacing: -0.035em; }
+.fm-skin :where(h2) { font-size: 26px; }
+.fm-skin :where(h3) { font-size: 20px; }
+.fm-skin :where(h4) {
+  font-family: var(--fm-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.fm-skin :where(p, li) { line-height: 1.5; }
+.fm-skin :where(small) { color: var(--fm-ink-soft); }
+.fm-skin :where(em) { font-family: var(--fm-serif); font-style: italic; font-size: 1.15em; }
+.fm-skin :where(a) { color: inherit; text-decoration-color: var(--fm-amber-deep); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.fm-skin :where(hr) { height: 0; margin: 24px 0; border: 0; border-top: var(--fm-line) solid var(--fm-ink); }
+.fm-skin :where(code, kbd, samp) { font-family: var(--fm-mono); font-size: 0.9em; }
+
+/* Buttons: dunkel; type="submit" wird zur Amber-Hauptaktion */
+.fm-skin :where(button, input[type="button"], input[type="submit"], input[type="reset"]) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px 22px;
+  border: var(--fm-line) solid var(--fm-ink);
+  border-radius: var(--fm-radius);
+  background: var(--fm-ink);
+  color: var(--fm-paper);
+  font: 600 16px/1 var(--fm-sans);
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.12s ease;
+}
+.fm-skin :where(button, input[type="button"], input[type="submit"], input[type="reset"]):hover { color: var(--fm-amber); }
+.fm-skin :where(button, input[type="button"], input[type="submit"], input[type="reset"]):active { transform: translateY(1px); }
+.fm-skin :where(button, input[type="button"], input[type="submit"], input[type="reset"]):focus-visible { outline: 3px solid var(--fm-amber); outline-offset: 3px; }
+.fm-skin :where(button[type="submit"], input[type="submit"]) { background: var(--fm-amber); color: var(--fm-ink); }
+.fm-skin :where(button[type="submit"], input[type="submit"]):hover { background: var(--fm-amber-deep); color: var(--fm-ink); }
+.fm-skin :where(button, input):disabled { opacity: 0.45; cursor: default; }
+
+/* Eingaben: Linie statt Kasten, Label wie ein Ticketfeld */
+.fm-skin :where(label) {
+  font-family: var(--fm-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fm-ink-soft);
+}
+.fm-skin :where(input:not([type="button"], [type="submit"], [type="reset"], [type="checkbox"], [type="radio"], [type="range"], [type="file"]), select, textarea) {
+  width: 100%;
+  padding: 8px 0 10px;
+  border: 0;
+  border-bottom: var(--fm-line) solid var(--fm-ink);
+  border-radius: 0;
+  background: transparent;
+  color: var(--fm-ink);
+  font: 500 20px/1.25 var(--fm-sans);
+  letter-spacing: -0.01em;
+  outline: none;
+}
+.fm-skin :where(input, select, textarea):focus { border-bottom-color: var(--fm-amber-deep); box-shadow: 0 1.5px 0 var(--fm-amber-deep); }
+.fm-skin :where(input[type="checkbox"], input[type="radio"]) { accent-color: var(--fm-amber-deep); width: 18px; height: 18px; }
+
+/* Tabellen wie Ticketfelder */
+.fm-skin :where(table) { width: 100%; border-collapse: collapse; }
+.fm-skin :where(th) {
+  padding: 0 12px 8px 0;
+  border-bottom: var(--fm-line) solid var(--fm-ink);
+  font-family: var(--fm-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-align: left;
+  text-transform: uppercase;
+  color: var(--fm-ink-soft);
+}
+.fm-skin :where(td) { padding: 12px 12px 12px 0; border-bottom: 1px solid var(--fm-paper-edge); font-size: 16px; font-weight: 500; }
+
+/* Dialoge bekommen Papier */
+.fm-skin :where(dialog) {
+  padding: 28px 24px;
+  border: 0;
+  border-radius: var(--fm-radius-ticket);
+  background: var(--fm-paper-sheen), var(--fm-paper);
+  color: var(--fm-ink);
+  filter: var(--fm-shadow-ticket);
+}
+.fm-skin :where(dialog)::backdrop { background: rgb(7 9 17 / 0.7); backdrop-filter: blur(3px); }
+
+/* ---------- Weniger Bewegung ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .fm-ticket--arrive,
+  .fm-status::before,
+  .fm-log-row--fresh,
+  .fm-log-row--fresh .fm-log-cells,
+  .fm-log-row--leaving { animation: none; }
+  .fm-star { transform: none; }
+  .fm-sky .fm-sky-plane,
+  .fm-sparkle { display: none; }
+}

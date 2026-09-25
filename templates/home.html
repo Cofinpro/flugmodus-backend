@@ -4,102 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Offline Bank Inc.</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/design/flugmodus.css">
+  <script src="/design/sky.js" defer></script>
   <style>
-    :root {
-      --sky-top: #0d1533;
-      --sky: #070911;
-      --paper: #f3eee4;
-      --paper-edge: #e4dccd;
-      --ink: #121419;
-      --ink-soft: #6b6457;
-      --amber: #ffb547;
-      --amber-deep: #e8891c;
-      --glow: #3b5bff;
-      --notch: 15px;
-      --sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-      --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
-      --serif: "Instrument Serif", ui-serif, Georgia, serif;
-    }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 32px 16px;
-      overflow-x: hidden;
-      background:
-        radial-gradient(60% 50% at 18% 12%, rgb(59 91 255 / 0.28), transparent 70%),
-        radial-gradient(50% 45% at 88% 92%, rgb(255 181 71 / 0.16), transparent 70%),
-        linear-gradient(180deg, var(--sky-top), var(--sky) 70%);
-      color: var(--ink);
-      font-family: var(--sans);
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* Filmkorn */
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0.09;
-      mix-blend-mode: overlay;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    }
-
-    /* Flugroute im Hintergrund */
-    .sky {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-    }
-    .sky .route { fill: none; stroke: rgb(255 255 255 / 0.16); stroke-width: 1.5; stroke-dasharray: 2 10; stroke-linecap: round; }
-    .sky .star {
-      --t: 0;
-      fill: #fff;
-      opacity: calc(.5 + .5 * var(--t));
-      transform: scale(calc(1 + 1.8 * var(--t)));
-      transform-box: fill-box;
-      transform-origin: center;
-      filter: drop-shadow(0 0 calc(4px * var(--t)) #fff) drop-shadow(0 0 calc(14px * var(--t)) rgb(160 190 255 / .9));
-      transition: opacity .5s ease, transform .5s ease, filter .5s ease;
-    }
-    @media (prefers-reduced-motion: reduce) { .sky .star { transform: none; } }
-    .sky .plane { fill: var(--amber); filter: drop-shadow(0 0 8px rgb(255 181 71 / 0.8)); }
-    @media (prefers-reduced-motion: reduce) { .sky .plane { display: none; } }
-
-    /* Sternschnuppen */
-    .meteors { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
-    .meteor {
-      position: absolute;
-      width: 160px;
-      height: 1.5px;
-      border-radius: 999px;
-      background: linear-gradient(90deg, rgb(255 255 255 / 0), rgb(200 215 255 / .5) 60%, #fff);
-      transform-origin: 100% 50%;
-      will-change: transform, opacity;
-    }
-    .meteor::after {
-      content: "";
-      position: absolute;
-      right: -2px;
-      top: 50%;
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: #fff;
-      transform: translateY(-50%);
-      box-shadow: 0 0 8px 2px rgb(255 255 255 / .8), 0 0 18px 4px rgb(160 190 255 / .5);
-    }
-
-    /* Flugzeug mit Banner bei neuer Anmeldung */
+    /* Neue Anmeldung: Flugzeug mit Nyan-Regenbogen, der Name steht mittendrin */
     .flyby {
       position: fixed;
       left: 0;
@@ -120,7 +28,7 @@
       z-index: 1;
       width: 62px;
       height: 62px;
-      color: var(--amber);
+      color: var(--fm-amber);
       transform: rotate(-90deg);
       filter: drop-shadow(0 0 12px rgb(255 181 71 / .55));
     }
@@ -144,360 +52,139 @@
       font-weight: 700;
       letter-spacing: -0.01em;
       white-space: nowrap;
-      -webkit-text-stroke: 5px var(--ink);
+      -webkit-text-stroke: 5px var(--fm-ink);
       paint-order: stroke fill;
-      text-shadow: 0 3px 0 var(--ink);
+      text-shadow: 0 3px 0 var(--fm-ink);
     }
     @keyframes wave { 0% { transform: translateY(-2px); } 50% { transform: translateY(2px); } }
-
-    /* Nyan: Pixel-Funkeln entlang der Flugbahn */
-    .sparkle {
-      position: fixed;
-      z-index: 1;
-      width: 4px;
-      height: 4px;
-      background: var(--c);
-      pointer-events: none;
-      box-shadow: 4px 0 var(--c), -4px 0 var(--c), 0 4px var(--c), 0 -4px var(--c);
-      animation: twinkle .9s steps(1) forwards;
-    }
-    @keyframes twinkle {
-      0% { transform: scale(.5); }
-      20% { transform: scale(1); }
-      45% { transform: scale(1.6); box-shadow: 8px 0 var(--c), -8px 0 var(--c), 0 8px var(--c), 0 -8px var(--c); background: transparent; }
-      70% { transform: scale(1.2) rotate(45deg); opacity: .8; }
-      90% { transform: scale(.6) rotate(45deg); opacity: .5; }
-      100% { opacity: 0; }
-    }
 
     @keyframes bob { 50% { transform: translate3d(0, -4px, 0); } }
     @media (prefers-reduced-motion: reduce) {
       .flyby-inner, .flyby .rainbow i { animation: none; }
     }
 
-    /* Boarding Pass */
-    .pass {
-      position: relative;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      width: min(880px, 100%);
-      filter: drop-shadow(0 30px 60px rgb(0 0 0 / 0.55)) drop-shadow(0 2px 6px rgb(0 0 0 / 0.3));
-      animation: arrive 900ms cubic-bezier(.2, .8, .2, 1) both;
-    }
-    @keyframes arrive {
-      from { opacity: 0; transform: translateY(28px) rotate(-1.2deg); }
-      to { opacity: 1; transform: none; }
-    }
-    @media (prefers-reduced-motion: reduce) { .pass { animation: none; } }
+    /* Choreografie: Ruhe (idle) → Tabelle unterm Ticket (stacked) → Ticket weicht aus (busy), Wechsel per View Transition */
+    .home { display: grid; justify-items: center; align-items: center; gap: 32px; width: 100%; }
+    .home-onboard { display: grid; justify-items: center; width: 100%; view-transition-name: onboard; }
+    .home-log { view-transition-name: log; }
 
-    .main, .stub {
-      background:
-        linear-gradient(180deg, rgb(255 255 255 / 0.55), transparent 40%),
-        var(--paper);
-    }
-    .main {
-      padding: 36px 40px 32px;
-      border-radius: 22px 0 0 22px;
-      -webkit-mask:
-        radial-gradient(circle at 100% 0, #0000 var(--notch), #000 calc(var(--notch) + .5px)),
-        radial-gradient(circle at 100% 100%, #0000 var(--notch), #000 calc(var(--notch) + .5px));
-      mask:
-        radial-gradient(circle at 100% 0, #0000 var(--notch), #000 calc(var(--notch) + .5px)),
-        radial-gradient(circle at 100% 100%, #0000 var(--notch), #000 calc(var(--notch) + .5px));
-    }
-    .stub {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 18px;
-      padding: 32px 36px;
-      border-radius: 0 22px 22px 0;
-      background-image:
-        linear-gradient(var(--paper-edge) 50%, transparent 0),
-        linear-gradient(180deg, rgb(255 255 255 / 0.55), transparent 40%);
-      background-size: 2px 14px, auto;
-      background-repeat: repeat-y, no-repeat;
-      background-position: 0 var(--notch), 0 0;
-      -webkit-mask:
-        radial-gradient(circle at 0 0, #0000 var(--notch), #000 calc(var(--notch) + .5px)),
-        radial-gradient(circle at 0 100%, #0000 var(--notch), #000 calc(var(--notch) + .5px));
-      mask:
-        radial-gradient(circle at 0 0, #0000 var(--notch), #000 calc(var(--notch) + .5px)),
-        radial-gradient(circle at 0 100%, #0000 var(--notch), #000 calc(var(--notch) + .5px));
-    }
-
-    .top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-    .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
-    .logo {
-      display: grid;
-      place-items: center;
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background: var(--ink);
-      color: var(--amber);
-    }
-    .logo svg { width: 20px; height: 20px; transform: rotate(45deg); }
-    .tag {
-      font-family: var(--mono);
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      padding: 7px 12px;
-      border: 1.5px solid var(--ink);
-      border-radius: 999px;
-    }
-
-    .route {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      align-items: end;
-      gap: 20px;
-      margin: 34px 0 30px;
-    }
-    .port .code {
-      display: block;
-      font-size: clamp(56px, 11vw, 88px);
-      font-weight: 700;
-      line-height: .82;
-      letter-spacing: -0.045em;
-    }
-    .port .city {
-      display: block;
-      margin-top: 12px;
-      font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--ink-soft);
-    }
-    .port.to { text-align: right; }
-    .port.to .code { color: transparent; -webkit-text-stroke: 2px var(--ink); }
-    .path {
-      position: relative;
-      align-self: center;
-      height: 2px;
-      margin-bottom: 26px;
-    }
-    .path::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background-image: linear-gradient(90deg, var(--ink) 50%, transparent 0);
-      background-size: 10px 2px;
-      opacity: .75;
-      -webkit-mask: linear-gradient(90deg, #000 calc(50% - 20px), #0000 0 calc(50% + 20px), #000 0);
-      mask: linear-gradient(90deg, #000 calc(50% - 20px), #0000 0 calc(50% + 20px), #000 0);
-    }
-    .path svg {
-      position: absolute;
+    /* Ruhe: Log ist ein schmaler Streifen am unteren Rand */
+    .home[data-state="idle"] .home-log {
+      position: fixed;
       left: 50%;
-      top: 50%;
-      width: 22px;
-      height: 22px;
-      transform: translate(-50%, -50%) rotate(90deg);
-      color: var(--amber-deep);
-    }
-
-    .fields {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 22px 18px;
-      padding-top: 26px;
-      border-top: 1.5px solid var(--ink);
-    }
-    .field dt {
-      font-family: var(--mono);
-      font-size: 10px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--ink-soft);
-    }
-    .field dd { margin: 6px 0 0; font-size: 19px; font-weight: 500; letter-spacing: -0.01em; }
-    .field dd.hot { color: var(--amber-deep); font-weight: 700; }
-    dl { margin: 0; }
-
-    .tagline {
-      margin: 30px 0 0;
-      font-size: 22px;
-      font-weight: 500;
-      letter-spacing: -0.02em;
-    }
-    .tagline em { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 1.2em; }
-
-    .scan-label {
-      font-family: var(--mono);
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-    }
-    .qr {
-      position: relative;
-      padding: 14px;
-      border-radius: 16px;
-      background: #fff;
-      box-shadow: inset 0 0 0 1.5px var(--ink);
-    }
-    .qr svg { display: block; width: 216px; height: auto; }
-    .qr::before, .qr::after {
-      content: "";
-      position: absolute;
-      width: 26px;
-      height: 26px;
-      border: 3px solid var(--amber-deep);
-    }
-    .qr::before { top: -9px; left: -9px; border-right: 0; border-bottom: 0; border-radius: 10px 0 0 0; }
-    .qr::after { bottom: -9px; right: -9px; border-left: 0; border-top: 0; border-radius: 0 0 10px 0; }
-    .gate {
+      bottom: 16px;
+      z-index: 2;
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--ink-soft);
+      gap: 24px;
+      width: min(880px, calc(100% - 32px));
+      padding: 14px 24px;
+      translate: -50% 0;
     }
-    .gate::before {
-      content: "";
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #1fbf6a;
-      box-shadow: 0 0 0 4px rgb(31 191 106 / 0.2);
-      animation: pulse 1.6s ease-in-out infinite;
-    }
-    @keyframes pulse { 50% { box-shadow: 0 0 0 8px rgb(31 191 106 / 0); } }
-    @media (prefers-reduced-motion: reduce) { .gate::before { animation: none; } }
+    .home[data-state="idle"] .fm-log-head { flex: none; gap: 18px; margin: 0; }
+    .home[data-state="idle"] .fm-log-title { font-size: 16px; }
+    .home[data-state="idle"] .fm-log-row--head { display: none; }
+    .home[data-state="idle"] .fm-log-body { flex: 1; min-width: 0; }
+    .home[data-state="idle"] .fm-log-empty { padding: 0; overflow: hidden; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+    .fm-page:has(.home[data-state="idle"]) .fm-center { padding-bottom: 100px; }
 
-    /* Hochkant: Abriss wandert nach unten */
-    @media (max-width: 760px) {
-      .pass { grid-template-columns: 1fr; width: min(440px, 100%); }
-      .main {
-        padding: 28px 24px 26px;
-        border-radius: 22px 22px 0 0;
-        -webkit-mask:
-          radial-gradient(circle at 0 100%, #0000 var(--notch), #000 calc(var(--notch) + .5px)),
-          radial-gradient(circle at 100% 100%, #0000 var(--notch), #000 calc(var(--notch) + .5px));
-        mask:
-          radial-gradient(circle at 0 100%, #0000 var(--notch), #000 calc(var(--notch) + .5px)),
-          radial-gradient(circle at 100% 100%, #0000 var(--notch), #000 calc(var(--notch) + .5px));
-      }
-      .stub {
-        padding: 30px 24px 32px;
-        border-radius: 0 0 22px 22px;
-        background-image:
-          linear-gradient(90deg, var(--paper-edge) 50%, transparent 0),
-          linear-gradient(180deg, rgb(255 255 255 / 0.55), transparent 40%);
-        background-size: 14px 2px, auto;
-        background-repeat: repeat-x, no-repeat;
-        background-position: var(--notch) 0, 0 0;
-        -webkit-mask:
-          radial-gradient(circle at 0 0, #0000 var(--notch), #000 calc(var(--notch) + .5px)),
-          radial-gradient(circle at 100% 0, #0000 var(--notch), #000 calc(var(--notch) + .5px));
-        mask:
-          radial-gradient(circle at 0 0, #0000 var(--notch), #000 calc(var(--notch) + .5px)),
-          radial-gradient(circle at 100% 0, #0000 var(--notch), #000 calc(var(--notch) + .5px));
-      }
-      .route { gap: 12px; margin: 26px 0 24px; }
-      .fields { gap: 18px 12px; }
-      .field dd { font-size: 16px; }
-      .tagline { font-size: 19px; }
-      .qr svg { width: min(240px, 62vw); }
+    /* Erste Einträge: Tabelle unter dem großen Ticket, das Ticket rutscht nur nach oben */
+    .home[data-state="stacked"] .home-log { width: min(880px, 100%); }
+
+    /* Wenn es eng wird: Tabelle bekommt den Platz, das Ticket zeigt nur noch QR-Code und das Nötigste */
+    .home[data-state="busy"] .home-log { width: min(880px, 100%); }
+    .home[data-state="busy"] .fm-ticket { width: min(340px, 100%); }
+    .home[data-state="busy"] :is(.fm-route, .fm-fields, .fm-tagline, .fm-ticket-head .fm-tag) { display: none; }
+    .home[data-state="busy"] .fm-ticket-main { padding: 22px 22px 20px; }
+    @media (min-width: 761px) { .home:is([data-state="stacked"], [data-state="busy"]) .home-log { padding: 30px 36px 22px; } }
+    @media (min-width: 1100px) {
+      .home[data-state="busy"] { grid-template-columns: minmax(0, 1fr) 340px; max-width: 1240px; }
+      .home[data-state="busy"] .home-log { grid-area: 1 / 1; width: 100%; }
+      .home[data-state="busy"] .home-onboard { grid-area: 1 / 2; }
+    }
+    @media (max-width: 640px) {
+      .home-log-sub,
+      .home[data-state="idle"] .fm-log-empty { display: none; }
+      .home[data-state="idle"] .home-log { bottom: 10px; width: calc(100% - 20px); }
     }
 
-    /* nach allen mask-Shorthands, sonst setzen die composite zurück */
-    .main, .stub { -webkit-mask-composite: source-in; mask-composite: intersect; }
+    ::view-transition-group(onboard),
+    ::view-transition-group(log) { animation-duration: 700ms; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
+    ::view-transition-group(onboard) { z-index: 1; } /* der QR-Code liegt beim Gleiten oben */
+    ::view-transition-old(onboard),
+    ::view-transition-new(onboard),
+    ::view-transition-old(log),
+    ::view-transition-new(log) { height: 100%; overflow: clip; animation-duration: 450ms; }
+
+    /* Sammelzeile (mehrere Münzen in einem Rutsch): kurz aufleuchten, Betrag zählt sichtbar hoch */
+    .fm-log-row--bump .fm-log-cells { animation: fm-log-glow 1.6s ease-out both; }
+    .fm-log-row--bump .fm-log-amount { transform-origin: 100% 50%; animation: home-count-pop 350ms ease-out; }
+    @keyframes home-count-pop { 40% { transform: scale(1.2); } }
+    @media (prefers-reduced-motion: reduce) {
+      .fm-log-row--bump .fm-log-cells,
+      .fm-log-row--bump .fm-log-amount { animation: none; }
+    }
   </style>
 </head>
-<body>
-  <svg class="sky" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-    <g class="stars">
-      <circle class="star" cx="120" cy="90" r="1.2"/><circle class="star" cx="340" cy="210" r=".8"/>
-      <circle class="star" cx="610" cy="70" r="1"/><circle class="star" cx="930" cy="150" r="1.3"/>
-      <circle class="star" cx="1210" cy="60" r=".9"/><circle class="star" cx="1350" cy="260" r="1.1"/>
-      <circle class="star" cx="1080" cy="820" r=".8"/><circle class="star" cx="230" cy="760" r="1"/>
-      <circle class="star" cx="60" cy="480" r=".7"/><circle class="star" cx="1400" cy="600" r=".8"/>
-      <circle class="star" cx="40" cy="160" r="0.8"/>
-      <circle class="star" cx="210" cy="40" r="1"/>
-      <circle class="star" cx="470" cy="130" r="0.7"/>
-      <circle class="star" cx="760" cy="40" r="0.9"/>
-      <circle class="star" cx="820" cy="250" r="0.7"/>
-      <circle class="star" cx="1030" cy="90" r="1"/>
-      <circle class="star" cx="1300" cy="150" r="0.8"/>
-      <circle class="star" cx="1420" cy="30" r="0.7"/>
-      <circle class="star" cx="150" cy="300" r="0.9"/>
-      <circle class="star" cx="1250" cy="340" r="0.8"/>
-      <circle class="star" cx="90" cy="640" r="1"/>
-      <circle class="star" cx="180" cy="860" r="0.8"/>
-      <circle class="star" cx="420" cy="820" r="0.9"/>
-      <circle class="star" cx="700" cy="870" r="0.7"/>
-      <circle class="star" cx="880" cy="800" r="1"/>
-      <circle class="star" cx="1180" cy="720" r="0.9"/>
-      <circle class="star" cx="1330" cy="860" r="1"/>
-      <circle class="star" cx="1260" cy="480" r="0.7"/>
-      <circle class="star" cx="30" cy="860" r="0.7"/>
-      <circle class="star" cx="560" cy="760" r="0.8"/>
-    </g>
-    <path id="flight" class="route" d="M -40 780 C 320 520, 520 140, 900 170 S 1380 420, 1500 120"/>
-    <g class="plane">
-      <path d="M12 0 L15 9 L26 13 L26 16 L15 14 L14 22 L17 25 L17 27 L12 25.5 L7 27 L7 25 L10 22 L9 14 L-2 16 L-2 13 L9 9 Z" transform="translate(-12 -13.5) rotate(90 12 13.5)"/>
-      <animateMotion dur="22s" repeatCount="indefinite" rotate="auto">
-        <mpath href="#flight"/>
-      </animateMotion>
-    </g>
-  </svg>
-  <div class="meteors" aria-hidden="true"></div>
+<body class="fm-page">
+  <main class="fm-center">
+    <!-- Ruhe: großes Ticket + schmaler Log-Streifen. Betrieb: Tabelle links, kompaktes Ticket rechts -->
+    <div class="home" id="home" data-state="idle">
+      <div class="home-onboard">
+        <article class="fm-ticket fm-ticket--wide fm-ticket--arrive">
+          <section class="fm-ticket-main">
+            <div class="fm-ticket-head">
+              <div class="fm-brand">
+                <span class="fm-logo"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></span>
+                Offline Bank Inc.
+              </div>
+              <span class="fm-tag">Boarding Pass</span>
+            </div>
 
-  <main class="pass">
-    <section class="main">
-      <div class="top">
-        <div class="brand">
-          <span class="logo">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
-          </span>
-          Offline Bank Inc.
-        </div>
-        <span class="tag">Boarding Pass</span>
+            <div class="fm-route">
+              <div class="fm-port"><span class="fm-port-code">ONL</span><span class="fm-port-label">Online</span></div>
+              <div class="fm-route-path" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></div>
+              <div class="fm-port fm-port--to"><span class="fm-port-code">OFF</span><span class="fm-port-label">Offline</span></div>
+            </div>
+
+            <dl class="fm-fields">
+              <div class="fm-field"><dt>Passagier</dt><dd>Coding Dojo</dd></div>
+              <div class="fm-field"><dt>Flug</dt><dd>FM 2026</dd></div>
+              <div class="fm-field"><dt>Klasse</dt><dd>Bargeld</dd></div>
+              <div class="fm-field"><dt>Gate</dt><dd>Dojo</dd></div>
+              <div class="fm-field"><dt>Sitz</dt><dd>1 €</dd></div>
+              <div class="fm-field"><dt>Netz</dt><dd class="fm-hot">Aus</dd></div>
+            </dl>
+
+            <p class="fm-tagline">Digitales Bargeld — <em>auch ohne Netz.</em></p>
+          </section>
+
+          <aside class="fm-ticket-stub">
+            <span class="fm-kicker">Scannen &amp; einsteigen</span>
+            <div class="fm-qr" role="img" aria-label="QR-Code zur Wallet">{{ qr_svg | safe }}</div>
+            <span class="fm-status">Boarding jetzt</span>
+          </aside>
+        </article>
       </div>
 
-      <div class="route">
-        <div class="port"><span class="code">ONL</span><span class="city">Online</span></div>
-        <div class="path" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+      <section class="fm-card fm-log home-log" aria-label="Live-Transaktionen">
+        <header class="fm-log-head">
+          <h2 class="fm-log-title">Live-Log<span class="home-log-sub"> — <em>was gerade passiert.</em></span></h2>
+          <span class="fm-status fm-status--wait" id="log-status">Verbinde</span>
+        </header>
+        <div class="fm-log-row fm-log-row--head" role="row">
+          <div class="fm-log-cells"><span class="fm-log-time">Zeit</span><span>Vorgang</span><span>Wer</span><span class="fm-log-what">Details</span><span class="fm-log-num">Betrag</span></div>
         </div>
-        <div class="port to"><span class="code">OFF</span><span class="city">Offline</span></div>
-      </div>
-
-      <dl class="fields">
-        <div class="field"><dt>Passagier</dt><dd>Coding Dojo</dd></div>
-        <div class="field"><dt>Flug</dt><dd>FM 2026</dd></div>
-        <div class="field"><dt>Klasse</dt><dd>Bargeld</dd></div>
-        <div class="field"><dt>Gate</dt><dd>Dojo</dd></div>
-        <div class="field"><dt>Sitz</dt><dd>1 €</dd></div>
-        <div class="field"><dt>Netz</dt><dd class="hot">Aus</dd></div>
-      </dl>
-
-      <p class="tagline">Digitales Bargeld — <em>auch ohne Netz.</em></p>
-    </section>
-
-    <aside class="stub">
-      <span class="scan-label">Scannen &amp; einsteigen</span>
-      <div class="qr" role="img" aria-label="QR-Code zur Wallet">{{ qr_svg | safe }}</div>
-      <span class="gate">Boarding jetzt</span>
-    </aside>
+        <div class="fm-log-body" id="log">
+          <p class="fm-log-empty">Noch ruhig am Gate — <em>gleich geht's los.</em></p>
+        </div>
+      </section>
+    </div>
   </main>
+
   <script>
-    // Neue Anmeldung: Flugzeug mit Banner fliegt von rechts nach links
-    const planeIcon = document.querySelector(".logo svg").outerHTML.replace("<svg", '<svg class="plane-icon"');
+    // Neue Anmeldung: Flugzeug mit Regenbogen fliegt von rechts nach links
+    const planeIcon = document.querySelector(".fm-logo svg").outerHTML.replace("<svg", '<svg class="plane-icon"');
     const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
     let nextLaunch = 0;
     let lane = 0;
@@ -534,24 +221,12 @@
               { duration: ((innerWidth + width + 80) / 320) * 1000, easing: "linear" },
             );
         if (reducedMotion) plane.style.left = `calc(50% - ${width / 2}px)`;
-        const sparkles = reducedMotion ? 0 : setInterval(() => sparkle(plane), 70);
+        const sparkles = reducedMotion ? 0 : setInterval(() => window.FlugmodusSky?.sparkleAround(plane), 70);
         animation.onfinish = () => {
           clearInterval(sparkles);
           plane.remove();
         };
       }, delay);
-    }
-
-    const sparkleColors = ["#fff", "#fff", "#fff", "#ffe8a3", "#ffb3e6", "#a8e4ff"];
-    function sparkle(plane) {
-      const box = plane.getBoundingClientRect();
-      const dot = document.createElement("span");
-      dot.className = "sparkle";
-      dot.style.setProperty("--c", sparkleColors[Math.floor(Math.random() * sparkleColors.length)]);
-      dot.style.left = `${box.left + Math.random() * box.width}px`;
-      dot.style.top = `${box.top + box.height / 2 + (Math.random() - 0.5) * 110}px`;
-      document.body.append(dot);
-      dot.addEventListener("animationend", () => dot.remove());
     }
 
     let seen = null;
@@ -568,59 +243,177 @@
     checkArrivals();
     setInterval(checkArrivals, 2000);
 
-    // Sternschnuppen: alle paar Sekunden eine, ab und zu zwei kurz nacheinander
-    const meteors = document.querySelector(".meteors");
-    function shoot() {
-      const meteor = document.createElement("span");
-      meteor.className = "meteor";
-      const angle = 18 + Math.random() * 22;
-      const distance = 380 + Math.random() * 420;
-      const radians = (angle * Math.PI) / 180;
-      const dx = Math.cos(radians) * distance;
-      const dy = Math.sin(radians) * distance;
-      meteor.style.left = `${Math.random() * innerWidth * 0.75 - 80}px`;
-      meteor.style.top = `${Math.random() * innerHeight * 0.45}px`;
-      meteors.append(meteor);
-      meteor.animate(
-        [
-          { transform: `translate(0, 0) rotate(${angle}deg) scaleX(.3)`, opacity: 0 },
-          { opacity: 1, offset: 0.2 },
-          { transform: `translate(${dx}px, ${dy}px) rotate(${angle}deg) scaleX(1)`, opacity: 0 },
-        ],
-        { duration: 900 + Math.random() * 700, easing: "cubic-bezier(.3, 0, .7, 1)" },
-      ).onfinish = () => meteor.remove();
-    }
-    function scheduleMeteor() {
-      setTimeout(() => {
-        if (!document.hidden) {
-          shoot();
-          if (Math.random() < 0.2) setTimeout(shoot, 250 + Math.random() * 400);
-        }
-        scheduleMeteor();
-      }, 2500 + Math.random() * 4500);
-    }
-    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) scheduleMeteor();
+    // Live-Log: Transaktionen per Server-Sent Events als Tabellenzeilen
+    const log = document.getElementById("log");
+    const logStatus = document.getElementById("log-status");
+    const LOG_ROWS = 8; // mehr nicht, damit der QR-Code im Bild bleibt
+    const LOG_LIFETIME_MS = 14000; // danach klappt die Zeile wieder zu
+    const emptyNote = log.querySelector(".fm-log-empty");
+    // payment_deposited und double_spend_detected kommen, sobald das Backend Einreichungen kennt
+    const LOG_KINDS = {
+      account_created: { code: "NEU", tone: "new", what: () => "Konto eröffnet" },
+      coin_issued: { code: "ABH", what: () => "Münze abgehoben", amount: (e) => [`${e.amount} €`, "out"] },
+      cheating_detected: { code: "STOP", tone: "alert", alert: true, what: () => "Betrug beim Abheben erkannt" },
+      payment_deposited: { code: "ZHL", tone: "pay", what: () => "Zahlung erhalten · Zahler anonym", amount: (e) => [`+${e.amount} €`, "in"] },
+      double_spend_detected: { code: "DOPPEL", tone: "alert", alert: true, what: () => "Münze doppelt ausgegeben – enttarnt", amount: (e) => [`${e.amount} €`, ""] },
+    };
+    const shown = new Set();
+    const home = document.getElementById("home");
+    const ticketCard = home.querySelector(".fm-ticket");
+    const IDLE_AFTER_MS = 1500; // kurze Pause, bevor der Log wieder zum Streifen wird
+    const STACK_GAP = 32; // Abstand Ticket–Tabelle (.home gap)
+    const PAGE_PADDING = 64; // .fm-center oben + unten
+    const RETURN_SLACK = 60; // erst zurück, wenn deutlich Platz frei ist – kein Hin- und Herspringen
+    let wideTicketHeight = 0;
+    let targetState = "idle";
+    let transition = Promise.resolve();
+    let idleTimer = 0;
 
-    // Sterne leuchten dezent auf, wenn die Maus in der Nähe ist
-    const stars = [...document.querySelectorAll(".star")];
-    const reach = 300;
-    let pointer = null;
-    let frame = 0;
-    function glow() {
-      frame = 0;
-      for (const star of stars) {
-        let t = 0;
-        if (pointer) {
-          const box = star.getBoundingClientRect();
-          const distance = Math.hypot(box.x + box.width / 2 - pointer.x, box.y + box.height / 2 - pointer.y);
-          t = Math.max(0, 1 - distance / reach) ** 1.5;
-        }
-        star.style.setProperty("--t", t.toFixed(3));
-      }
+    // Wechsel nacheinander abarbeiten, damit sich zwei View Transitions nicht gegenseitig abbrechen
+    function goTo(state) {
+      if (targetState === state) return transition;
+      targetState = state;
+      transition = transition.then(() => {
+        const apply = () => {
+          home.dataset.state = state;
+          ticketCard.classList.toggle("fm-ticket--wide", state !== "busy");
+        };
+        if (reducedMotion || !document.startViewTransition) return apply();
+        return document.startViewTransition(apply).finished.catch(() => {});
+      });
+      return transition;
     }
-    function schedule() { frame ||= requestAnimationFrame(glow); }
-    addEventListener("pointermove", (event) => { pointer = { x: event.clientX, y: event.clientY }; schedule(); });
-    document.documentElement.addEventListener("pointerleave", () => { pointer = null; schedule(); });
+
+    function logRow(event) {
+      const kind = LOG_KINDS[event.kind] ?? { code: event.kind.slice(0, 6).toUpperCase(), what: () => "" };
+      const row = document.createElement("div");
+      row.className = "fm-log-row fm-log-row--fresh";
+      row.setAttribute("role", "row");
+      const cells = document.createElement("div");
+      cells.className = "fm-log-cells";
+      const [amount, direction] = kind.amount?.(event) ?? ["", ""];
+      const parts = [
+        ["fm-log-time", new Date(event.time).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })],
+        [`fm-log-code${kind.tone ? ` fm-log-code--${kind.tone}` : ""}`, kind.code],
+        ["fm-log-who", event.username ?? "Anonym"],
+        [`fm-log-what${kind.alert ? " fm-log-what--alert" : ""}`, kind.what(event)],
+        [`fm-log-amount${direction ? ` fm-log-amount--${direction}` : ""}`, amount],
+      ];
+      for (const [className, text] of parts) {
+        const cell = document.createElement("span");
+        cell.className = className;
+        cell.textContent = text;
+        cells.append(cell);
+      }
+      row.append(cells);
+      return row;
+    }
+
+    // Passt großes Ticket + Tabelle untereinander ins Fenster? Sonst weicht das Ticket aus.
+    function checkSpace() {
+      if (home.dataset.state !== "busy") wideTicketHeight = ticketCard.offsetHeight;
+      const stackedHeight = wideTicketHeight + STACK_GAP + home.querySelector(".home-log").offsetHeight + PAGE_PADDING;
+      if (targetState === "stacked" && stackedHeight > innerHeight) goTo("busy");
+      else if (targetState === "busy" && stackedHeight + RETURN_SLACK <= innerHeight) goTo("stacked");
+    }
+    let resizeFrame = 0;
+    addEventListener("resize", () => {
+      if (targetState !== "idle") resizeFrame ||= requestAnimationFrame(() => { resizeFrame = 0; checkSpace(); });
+    });
+
+    // Mehrere Münzen einer Person landen in einer Zeile, solange sie lebt: username → { count, total, row }
+    const withdrawals = new Map();
+
+    function scheduleExpiry(row) {
+      clearTimeout(row.expiry);
+      row.expiry = setTimeout(() => removeRow(row), LOG_LIFETIME_MS);
+    }
+
+    function showWithdrawal(group, bump) {
+      const { row, count, total } = group;
+      row.querySelector(".fm-log-what").textContent = count === 1 ? "Münze abgehoben" : `${count} Münzen abgehoben`;
+      row.querySelector(".fm-log-amount").textContent = `${total} €`;
+      scheduleExpiry(row); // jede weitere Münze verlängert die Lebensdauer
+      // noch am Aufklappen? Dann nur den Text ändern, nicht die Animation abschneiden
+      if (!bump || performance.now() - row.born < 700) return;
+      row.classList.remove("fm-log-row--fresh", "fm-log-row--bump");
+      void row.offsetWidth; // Animation neu starten
+      row.classList.add("fm-log-row--bump");
+    }
+
+    function removeRow(row) {
+      clearTimeout(row.expiry);
+      row.onRemove?.();
+      if (row.classList.contains("fm-log-row--leaving")) return;
+      const done = () => {
+        row.remove();
+        if (log.querySelector(".fm-log-row")) return checkSpace();
+        log.append(emptyNote);
+        idleTimer = setTimeout(() => {
+          if (!log.querySelector(".fm-log-row")) goTo("idle");
+        }, IDLE_AFTER_MS);
+      };
+      if (reducedMotion) return done();
+      row.classList.add("fm-log-row--leaving");
+      row.addEventListener("animationend", done, { once: true });
+    }
+
+    function trimLog() {
+      const rows = [...log.querySelectorAll(".fm-log-row:not(.fm-log-row--leaving)")];
+      rows.slice(LOG_ROWS).forEach(removeRow);
+    }
+
+    function addToLog(event) {
+      // id + Zeit als Schlüssel: nach einem Server-Neustart beginnen die ids wieder bei 1
+      const key = `${event.id}-${event.time}`;
+      // Rückblick beim Verbinden überspringen – der Log zeigt nur, was jetzt passiert
+      if (event.replay || shown.has(key)) return;
+      shown.add(key);
+      let group = null;
+      if (event.kind === "coin_issued") {
+        group = withdrawals.get(event.username);
+        if (group) {
+          group.count += 1;
+          group.total += event.amount;
+          if (group.row) showWithdrawal(group, true); // sonst übernimmt es die Zeile, sobald sie da ist
+          return;
+        }
+        group = { count: 1, total: event.amount, row: null };
+        withdrawals.set(event.username, group);
+      }
+      clearTimeout(idleTimer);
+      // aus der Ruhe erst den Streifen zur Tabelle machen, dann klappt die Zeile auf
+      const ready = targetState === "idle" ? goTo("stacked") : transition;
+      ready.then(() => {
+        emptyNote.remove();
+        const row = logRow(event);
+        row.born = performance.now();
+        log.prepend(row);
+        if (group) {
+          group.row = row;
+          row.onRemove = () => withdrawals.get(event.username) === group && withdrawals.delete(event.username);
+          showWithdrawal(group, false); // Münzen, die schon während des Aufklappens kamen
+        } else {
+          scheduleExpiry(row);
+        }
+        trimLog();
+        setTimeout(checkSpace, reducedMotion ? 0 : 650); // nach dem Aufklappen messen
+        if (!reducedMotion) {
+          for (let i = 0; i < 10; i++) setTimeout(() => window.FlugmodusSky?.sparkleAround(row, 30), 250 + i * 60);
+        }
+      });
+    }
+
+    const events = new EventSource("/api/events");
+    events.onopen = () => {
+      logStatus.textContent = "Live";
+      logStatus.className = "fm-status";
+    };
+    events.onerror = () => {
+      logStatus.textContent = "Verbinde";
+      logStatus.className = "fm-status fm-status--wait";
+    };
+    events.onmessage = (message) => addToLog(JSON.parse(message.data));
   </script>
 </body>
 </html>
