@@ -8,6 +8,7 @@ mask_j ⊕ (mask_j ⊕ u) = u.
 """
 
 import json
+from datetime import UTC, datetime
 
 from sqlmodel import Session, select
 
@@ -129,7 +130,15 @@ def reveal(
         "coin_id": coin.coin_id,
         "amount": coin.coin_value,
         "u": u,
-        "first": {"wallet_id": first.wallet_id.hex(), "nonce": first.nonce.hex()},
-        "second": {"wallet_id": wallet_id.hex(), "nonce": coin.nonce},
+        "first": {
+            "wallet_id": first.wallet_id.hex(),
+            "nonce": first.nonce.hex(),
+            "time": first.created_at.isoformat(),  # eingereicht beim ersten Händler
+        },
+        "second": {
+            "wallet_id": wallet_id.hex(),
+            "nonce": coin.nonce,
+            "time": datetime.now(UTC).isoformat(),
+        },
         "pairs": pairs,
     }
