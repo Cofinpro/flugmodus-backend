@@ -324,16 +324,36 @@
     .reveal__meta { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; margin: 6px 0 0; font-size: 12px; }
     .reveal__meta dt { color: var(--fm-ink-soft); font: 600 10px var(--fm-mono); letter-spacing: 0.1em; text-transform: uppercase; align-self: center; }
     .reveal__meta dd { margin: 0; overflow-wrap: anywhere; }
-    .coin-grid { display: grid; grid-template-columns: 36px 1fr 1fr; gap: 3px 10px; margin-top: 10px; }
-    .coin-grid__head { font: 600 10px var(--fm-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--fm-ink-soft); }
-    .coin-grid__sides { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; font: 600 9.5px var(--fm-mono); color: var(--fm-ink-soft); text-align: center; }
-    .coin-grid__j { display: grid; place-items: center; font: 700 12px var(--fm-mono); color: var(--fm-ink-soft); }
-    .coin-grid__j--hit { color: var(--fm-red); }
-    .side { display: grid; place-items: center; height: 24px; border-radius: 5px; background: var(--fm-paper-edge); font: 500 11px var(--fm-mono); color: var(--fm-ink-soft); opacity: 0.7; }
-    .side--open { background: #fff; color: var(--fm-ink); opacity: 1; box-shadow: inset 0 0 0 1px var(--fm-paper-edge); }
-    .coin-grid__sides--hit .side { opacity: 1; }
-    .coin-grid__sides--hit .side--open { background: color-mix(in srgb, var(--fm-red) 16%, #fff); box-shadow: inset 0 0 0 1.5px var(--fm-red); }
     .reveal__xor { grid-template-columns: max-content 1fr max-content; }
+
+    /* Doppelausgabe: Challenge-Bits der beiden Händler und die gemeinsame Münz-Tabelle */
+    .pay-tag { display: inline-grid; place-items: center; min-width: 24px; padding: 2px 5px; border-radius: 4px; font: 700 10px/1.2 var(--fm-mono); letter-spacing: 0.06em; }
+    .pay-tag--z1 { background: var(--fm-amber); color: var(--fm-ink); }
+    .pay-tag--z2 { background: var(--fm-ink); color: var(--fm-paper); }
+    .challenge-grid { display: grid; grid-template-columns: minmax(150px, auto) repeat(12, minmax(22px, 1fr)); gap: 4px; align-items: center; margin-top: 10px; }
+    .challenge-grid__label { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; font-size: 13px; font-weight: 600; }
+    .challenge-grid__hash { flex-basis: 100%; font: 500 10.5px var(--fm-mono); color: var(--fm-ink-soft); }
+    .challenge-grid__index { text-align: center; font: 600 10px var(--fm-mono); color: var(--fm-ink-soft); }
+    .challenge-bit { display: grid; place-items: center; height: 26px; border-radius: 5px; font: 700 13px var(--fm-mono); }
+    .challenge-bit--z1 { background: color-mix(in srgb, var(--fm-amber) 35%, #fff); }
+    .challenge-bit--z2 { background: color-mix(in srgb, var(--fm-ink) 12%, #fff); }
+    .challenge-bit--differs { box-shadow: inset 0 0 0 2px var(--fm-red); color: var(--fm-red); }
+    .challenge-grid__arrow { text-align: center; font: 700 13px var(--fm-mono); color: var(--fm-red); }
+    .coin-table { display: grid; grid-template-columns: 52px 1fr 1fr; gap: 4px 8px; margin-top: 10px; }
+    .coin-table__head { font: 600 10px var(--fm-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--fm-ink-soft); }
+    .coin-table__head:not(:first-child) { text-align: center; }
+    .coin-table__index { display: grid; place-items: center; font: 700 12px var(--fm-mono); color: var(--fm-ink-soft); }
+    .coin-table__index--hit { color: var(--fm-red); }
+    .coin-cell { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 30px; padding: 4px 8px; border-radius: 6px; background: #fff; box-shadow: inset 0 0 0 1px var(--fm-paper-edge); }
+    .coin-cell__value { font: 500 11.5px var(--fm-mono); color: var(--fm-ink); }
+    .coin-cell__tags { display: flex; align-items: center; gap: 3px; }
+    .coin-cell__note { margin-left: 3px; font-size: 10.5px; color: var(--fm-ink-soft); white-space: nowrap; }
+    .coin-cell--twice { background: color-mix(in srgb, var(--fm-paper-edge) 45%, #fff); }
+    .coin-cell--hit { background: color-mix(in srgb, var(--fm-red) 12%, #fff); box-shadow: inset 0 0 0 1.5px var(--fm-red); }
+    .coin-cell--none { justify-content: center; background: none; box-shadow: none; border: 1px dashed var(--fm-paper-edge); }
+    .coin-cell__none { font-size: 11px; color: var(--fm-ink-soft); }
+    .coin-table__legend { line-height: 2; }
+    .coin-table__legend-hit { padding: 1px 6px; border-radius: 4px; background: color-mix(in srgb, var(--fm-red) 12%, #fff); box-shadow: inset 0 0 0 1.5px var(--fm-red); color: var(--fm-red); font-weight: 700; }
   </style>
 </head>
 <body class="fm-page">
@@ -848,35 +868,67 @@
       s3.append(spends);
       s3.append(el("p", "reveal__hint", "Empfänger-ID und nonce sind bei jeder Zahlung anders – deshalb würfelt jede Zahlung andere Seiten zum Öffnen."));
 
-      // 4 · Die Münze: pro Paar eine Seite offen
+      // 2 · Die Challenges: jeder Händler bestimmt pro Index, welche Seite er sehen will
+      const shortHex = (hex) => hexGroups(hex.slice(0, 6)) + "…";
+      const PAYS = [
+        { tag: "Z1", who: e.first_merchant ?? "Händler 1", part: e.first, bit: (p) => p.bit_first, value: (p) => p.revealed_first },
+        { tag: "Z2", who: e.merchant ?? "Händler 2", part: e.second, bit: (p) => p.bit_second, value: (p) => p.revealed_second },
+      ];
+      const sc = el("section", "reveal__step");
+      sc.append(el("h4", "", "2 · Die Challenges – welche Seite jeder Händler pro Index verlangt"));
+      sc.append(el("p", "reveal__text", "Jeder Händler würfelt nicht selbst: Die Challenge ist ein Hash aus Münz-ID, seiner Empfänger-ID und seiner nonce. Die ersten 12 Bit sind die 12 Indizes – 0 heißt „zeig mir maskⱼ“, 1 heißt „zeig mir maskⱼ ⊕ u“."));
+      const cgrid = el("div", "challenge-grid");
+      cgrid.append(el("span", "challenge-grid__label", "Index"));
+      for (const p of e.pairs) cgrid.append(el("span", "challenge-grid__index", String(p.j + 1)));
+      for (const pay of PAYS) {
+        const label = el("span", "challenge-grid__label");
+        label.append(el("span", `pay-tag pay-tag--${pay.tag.toLowerCase()}`, pay.tag), el("span", "", ` ${pay.who}`));
+        if (pay.part.challenge) label.append(el("code", "challenge-grid__hash", `SHA-256(…) = ${pay.part.challenge}…`));
+        cgrid.append(label);
+        for (const p of e.pairs) {
+          const differs = p.bit_first !== p.bit_second;
+          cgrid.append(el("span", `challenge-bit challenge-bit--${pay.tag.toLowerCase()}${differs ? " challenge-bit--differs" : ""}`, String(pay.bit(p))));
+        }
+      }
+      cgrid.append(el("span", ""));
+      for (const p of e.pairs) cgrid.append(el("span", "challenge-grid__arrow", p.bit_first !== p.bit_second ? "↑" : ""));
+      sc.append(cgrid);
+      sc.append(el("p", "reveal__hint", `Andere Empfänger-ID und andere nonce → anderer Hash → andere Bits. Bei ${diff.length} von 12 Indizes (↑) verlangen die beiden Händler verschiedene Seiten.`));
+
+      // 3 · Die Münze: alles, was die Bank nach beiden Zahlungen kennt
       const s4 = el("section", "reveal__step");
-      s4.append(el("h4", "", "2 · Die Münze – bei jeder Zahlung pro Paar eine Seite offen"));
+      s4.append(el("h4", "", "3 · Die Münze – was beide Zahlungen zusammen offenlegen"));
       const coinLine = el("p", "reveal__text", "Münz-ID ");
       coinLine.append(el("code", "coin-chip", hexGroups(e.coin_id.slice(0, 12)) + "…"));
       s4.append(coinLine);
-      const grid = el("div", "coin-grid");
-      grid.append(el("span", "coin-grid__head", "Paar"), el("span", "coin-grid__head", "Zahlung 1"), el("span", "coin-grid__head", "Zahlung 2"));
-      grid.append(el("span", ""));
-      for (let i = 0; i < 2; i++) {
-        const sides = el("span", "coin-grid__sides");
-        sides.append(el("span", "", "maskⱼ"), el("span", "", "maskⱼ ⊕ u"));
-        grid.append(sides);
-      }
-      const shortHex = (hex) => hexGroups(hex.slice(0, 6)) + "…";
+      const table = el("div", "coin-table");
+      table.append(el("span", "coin-table__head", "Index"), el("span", "coin-table__head", "maskⱼ"), el("span", "coin-table__head", "maskⱼ ⊕ u"));
       for (const p of e.pairs) {
         const hit = p.bit_first !== p.bit_second;
-        grid.append(el("span", `coin-grid__j${hit ? " coin-grid__j--hit" : ""}`, String(p.j + 1)));
-        for (const [bit, value] of [[p.bit_first, p.revealed_first], [p.bit_second, p.revealed_second]]) {
-          const cell = el("span", `coin-grid__sides${hit ? " coin-grid__sides--hit" : ""}`);
-          for (const side of [0, 1]) {
-            const open = bit === side;
-            cell.append(el("span", `side${open ? " side--open" : ""}`, open ? shortHex(value) : "🔒"));
+        table.append(el("span", `coin-table__index${hit ? " coin-table__index--hit" : ""}`, String(p.j + 1)));
+        for (const side of [0, 1]) {
+          const askers = PAYS.filter((pay) => pay.bit(p) === side);
+          const cell = el("span", `coin-cell${askers.length ? "" : " coin-cell--none"}${hit && askers.length ? " coin-cell--hit" : ""}${askers.length === 2 ? " coin-cell--twice" : ""}`);
+          if (askers.length === 0) {
+            cell.append(el("span", "coin-cell__none", "nicht angefordert"));
+          } else {
+            cell.append(el("code", "coin-cell__value", shortHex(askers[0].value(p))));
+            const tags = el("span", "coin-cell__tags");
+            for (const pay of askers) tags.append(el("span", `pay-tag pay-tag--${pay.tag.toLowerCase()}`, pay.tag));
+            if (askers.length === 2) tags.append(el("span", "coin-cell__note", "doppelt – verrät nichts"));
+            cell.append(tags);
           }
-          grid.append(cell);
+          table.append(cell);
         }
       }
-      s4.append(grid);
-      s4.append(el("p", "reveal__text", `In ${diff.length} Paaren hat die zweite Zahlung die andere Seite geöffnet (hervorgehoben). Zusammen liegen dort beide Seiten offen – maskⱼ und maskⱼ ⊕ u.`));
+      s4.append(table);
+      const legend = el("p", "reveal__hint coin-table__legend");
+      legend.append(
+        el("span", "pay-tag pay-tag--z1", "Z1"), el("span", "", " von Zahlung 1 angefordert · "),
+        el("span", "pay-tag pay-tag--z2", "Z2"), el("span", "", " von Zahlung 2 angefordert · "),
+        el("span", "coin-table__legend-hit", "rot"), el("span", "", ` = beide Seiten bekannt (${diff.length} Indizes). Eine Seite, die niemand verlangt hat, hat der Zahler nie gezeigt – von ihr kennt die Bank nur den Hash.`),
+      );
+      s4.append(legend);
 
       // 5 · XOR bringt u heraus
       const p0 = diff[0];
@@ -884,7 +936,7 @@
       const masked = p0.bit_first === 0 ? p0.revealed_second : p0.revealed_first;
       const binOf = (hex) => parseInt(hex.slice(0, 2), 16).toString(2).padStart(8, "0");
       const s5 = el("section", "reveal__step");
-      s5.append(el("h4", "", `3 · Paar ${p0.j + 1}: beide Seiten XOR-verknüpft – die Maske fällt weg`));
+      s5.append(el("h4", "", `4 · Index ${p0.j + 1}: beide Seiten XOR-verknüpft – die Maske fällt weg`));
       const xor = el("div", "reveal__xor");
       xor.append(
         el("span", "reveal__label", "maskⱼ"), el("code", "reveal__mono", hexGroups(mask)), el("code", "reveal__bin", binOf(mask)),
@@ -896,13 +948,13 @@
 
       // 6 · u → Konto
       const s6 = el("section", "reveal__step");
-      s6.append(el("h4", "", "4 · u ist wieder sichtbar – und gehört einem Konto"));
+      s6.append(el("h4", "", "5 · u ist wieder sichtbar – und gehört einem Konto"));
       const verdict = el("p", "reveal__verdict");
       verdict.append(el("code", "reveal__mono reveal__mono--u", hexGroups(e.u)), el("span", "", "→"), el("strong", "", e.username ?? "unbekanntes Konto"));
       s6.append(verdict);
       s6.append(el("p", "reveal__hint", "Mit nur einer Zahlung bleibt pro Paar eine Seite verschlossen, und u kommt nie heraus. Erst die zweite Ausgabe derselben Münze legt beide Seiten offen."));
 
-      body.append(s1, s2, s3, s4, s5, s6);
+      body.append(s1, s2, s3, sc, s4, s5, s6);
       reveal.showModal();
     }
     reveal.addEventListener("click", (event) => {
