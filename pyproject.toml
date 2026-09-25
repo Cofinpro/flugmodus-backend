@@ -10,6 +10,7 @@ dependencies = [
     "sqlmodel>=0.0.47",
     "ruff>=0.16.9",
     "sqladmin>=0.32.0",
+    "segno>=1.6.6",
 ]
 
 [tool.fastapi]

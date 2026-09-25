@@ -6,8 +6,11 @@ from collections.abc import Generator
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException, status
+import segno
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Field, Session, SQLModel, select
 
@@ -34,6 +37,9 @@ with open("keys/keys.json") as keys_file:
     }
 
 SESSIONS = {}
+
+PUBLIC_URL = "https://dime-claim-qualm.ngrok-free.dev"
+templates = Jinja2Templates(directory="templates")
 
 
 @asynccontextmanager
@@ -76,9 +82,12 @@ def parse_hex_values(hex_values: list[str]) -> list[bytes]:
     return values
 
 
-@app.get("/")
-async def root():
-    return {"message": "Offline Bank Inc. - Your secure banking solution."}
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request) -> HTMLResponse:
+    qr_svg = segno.make(PUBLIC_URL, error="m").svg_inline(
+        scale=8, border=0, dark="#121419"
+    )
+    return templates.TemplateResponse(request, "home.html", {"qr_svg": qr_svg})
 
 
 @app.post(
@@ -104,6 +113,13 @@ def create_account(account_in: AccountCreate, session: SessionDep) -> AccountPub
 def list_accounts(session: SessionDep) -> list[AccountPublic]:
     accounts = session.exec(select(Account)).all()
     return [AccountPublic.from_account(account) for account in accounts]
+
+
+@app.get("/api/arrivals")
+def arrivals(session: SessionDep) -> list[str]:
+    """Neueste Benutzernamen für die Startseite – bewusst ohne account_id."""
+    newest = select(Account.username).order_by(Account.created_at.desc()).limit(20)
+    return list(session.exec(newest))
 
 
 @app.post("/api/issue/start", response_model=IssueStartResponse)
