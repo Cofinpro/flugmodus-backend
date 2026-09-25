@@ -1,7 +1,7 @@
 import secrets
 from datetime import UTC, datetime
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, SQLModel, create_engine
 
 
 class Account(SQLModel, table=True):
@@ -25,3 +25,18 @@ class Emission(SQLModel, table=True):
 
 class Redemption(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
+
+
+sqlite_file_name = "database.db"
+sqlite_url = f"sqlite:///{sqlite_file_name}"
+
+engine = create_engine(sqlite_url, echo=True)
+
+
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
+
+
+if __name__ == "__main__":
+    # mit uv run models.py
+    create_db_and_tables()
