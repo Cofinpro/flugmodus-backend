@@ -8,7 +8,7 @@ class Account(SQLModel, table=True):
     account_id: str = Field(
         default_factory=lambda: secrets.token_urlsafe(16), primary_key=True
     )
-    username: str
+    username: str = Field(unique=True, index=True)
     u: bytes = Field(
         default_factory=lambda: secrets.token_bytes(12), unique=True, index=True
     )
