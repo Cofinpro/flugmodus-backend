@@ -295,9 +295,7 @@ def sync_account(request: SyncRequest, session: SessionDep) -> SyncResponse:
         if not verify_signature(
             int(coin.coin_id, 16), int(coin.signature, 16), modulus
         ):
-            bus.publish(
-                "sync_failed", username=account.username, reason="invalid_coin"
-            )
+            bus.publish("sync_failed", username=account.username, reason="invalid_coin")
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "invalid_coin")
 
         already_redeemed = session.exec(
@@ -323,7 +321,13 @@ def sync_account(request: SyncRequest, session: SessionDep) -> SyncResponse:
         )
     session.commit()
     session.refresh(account)
-    bus.publish("account_synced", username=account.username, credited=credited, coins=coin_ids_in_request, to=wallet_id)
+    bus.publish(
+        "account_synced",
+        username=account.username,
+        credited=credited,
+        coins=sorted(coin_ids_in_request),  # Menge → Liste, sonst kein JSON
+        to=wallet_id.hex(),
+    )
 
     return SyncResponse(
         account_id=account.account_id, credited=credited, balance=account.balance
