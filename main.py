@@ -19,6 +19,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Field, Session, SQLModel, select
 
+import double_spend
 from admin import setup_admin
 from events import bus
 from models import (
@@ -35,6 +36,8 @@ from schemas import (
     IssueFinishResponse,
     IssueStartRequest,
     IssueStartResponse,
+    RejectedCoin,
+    SpendCoin,
     SyncRequest,
     SyncResponse,
     WalletCoinsRequest,
@@ -226,11 +229,6 @@ def issue_finish(
             bus.publish("cheating_detected", username=account.username)
             raise HTTPException(400, "cheating_detected")
 
-    account.balance -= pending["coin_value"]
-    db_session.add(account)
-    db_session.commit()
-    bus.publish("coin_issued", username=account.username, amount=pending["coin_value"])
-
     kept_blinded = blinded_candidates[pending["kept_candidate_index"]]
     blind_signature = pow(kept_blinded, private_exponent, modulus)
     blind_signature_hex = format(blind_signature, "0256x")
@@ -245,6 +243,13 @@ def issue_finish(
         )
     )
     db_session.commit()
+    # Für den Live-Log: Fingerabdruck des VERBLENDETEN Werts – mehr sieht die Bank von der Münze nie
+    bus.publish(
+        "coin_issued",
+        username=account.username,
+        amount=pending["coin_value"],
+        blinded=format(kept_blinded, "0256x")[:16],
+    )
 
     return IssueFinishResponse(blind_signature=blind_signature_hex)
 
@@ -284,33 +289,33 @@ def sync_account(request: SyncRequest, session: SessionDep) -> SyncResponse:
         )
         raise HTTPException(status.HTTP_409_CONFLICT, "duplicate_coin_in_request")
 
+    # Jede Münze einzeln prüfen: gültige werden gutgeschrieben, ungültige einzeln abgelehnt.
+    # Früher scheiterte die ganze Einreichung an einer einzigen Münze – dann blieben auch die
+    # ehrlichen Münzen hängen, und jeder neue Sync-Versuch meldete dieselbe Doppelausgabe erneut.
+    accepted: list[SpendCoin] = []
+    rejected: list[RejectedCoin] = []
     for coin in request.coins:
         if coin.coin_value not in SIGNING_KEYS:
-            bus.publish(
-                "sync_failed", username=account.username, reason="unknown_coin_value"
-            )
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, "unknown_coin_value")
-
-        modulus, _ = SIGNING_KEYS[coin.coin_value]
-        if not verify_signature(
-            int(coin.coin_id, 16), int(coin.signature, 16), modulus
+            reason = "unknown_coin_value"
+        elif not verify_signature(
+            int(coin.coin_id, 16),
+            int(coin.signature, 16),
+            SIGNING_KEYS[coin.coin_value][0],
         ):
-            bus.publish("sync_failed", username=account.username, reason="invalid_coin")
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "invalid_coin")
-
-        already_redeemed = session.exec(
+            reason = "invalid_coin"
+        elif session.exec(
             select(Redemption).where(Redemption.coin_id == bytes.fromhex(coin.coin_id))
-        ).first()
-        if already_redeemed is not None:
-            bus.publish(
-                "sync_failed", username=account.username, reason="coin_already_redeemed"
-            )
-            raise HTTPException(status.HTTP_409_CONFLICT, "coin_already_redeemed")
+        ).first():
+            reason = "coin_already_redeemed"
+        else:
+            accepted.append(coin)
+            continue
+        rejected.append(RejectedCoin(coin_id=coin.coin_id, reason=reason))
 
-    credited = sum(coin.coin_value for coin in request.coins)
+    credited = sum(coin.coin_value for coin in accepted)
     account.balance += credited
     session.add(account)
-    for coin in request.coins:
+    for coin in accepted:
         session.add(
             Redemption(
                 coin_id=bytes.fromhex(coin.coin_id),
@@ -319,16 +324,38 @@ def sync_account(request: SyncRequest, session: SessionDep) -> SyncResponse:
                 account_id=account.account_id,
             )
         )
+        # erstes Transcript merken – eine spätere Doppelausgabe lässt sich damit dem Zahler zuordnen
+        double_spend.store_transcript(session, coin, wallet_id, account.account_id)
     session.commit()
     session.refresh(account)
-    bus.publish(
-        "account_synced",
-        username=account.username,
-        credited=credited,
-        coins=sorted(coin_ids_in_request),  # Menge → Liste, sonst kein JSON
-        to=wallet_id.hex(),
-    )
+    if accepted:
+        bus.publish(
+            "account_synced",
+            username=account.username,
+            credited=credited,
+            coins=sorted(coin.coin_id for coin in accepted),
+            to=wallet_id.hex(),
+        )
+    coins_by_id = {coin.coin_id: coin for coin in request.coins}
+    for item in rejected:  # genau ein Eintrag pro abgelehnter Münze
+        if item.reason == "coin_already_redeemed":
+            # beide Transcripts da? Dann Zahler per XOR der offengelegten Hälften aufdecken
+            revealed = double_spend.reveal(
+                session, coins_by_id[item.coin_id], wallet_id, account
+            )
+            if revealed is not None:
+                bus.publish("double_spend_detected", **revealed)
+                continue
+        bus.publish(
+            "sync_failed",
+            username=account.username,
+            reason=item.reason,
+            coin_id=item.coin_id,
+        )
 
     return SyncResponse(
-        account_id=account.account_id, credited=credited, balance=account.balance
+        account_id=account.account_id,
+        credited=credited,
+        balance=account.balance,
+        rejected=rejected,
     )
