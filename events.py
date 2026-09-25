@@ -85,8 +85,19 @@ class EventBus:
                 self._subscribers.discard(queue)
 
 
+def _jsonable(value):
+    """Fallback für json.dumps: ein einzelnes falsch befülltes Ereignis darf den Stream nicht sprengen –
+    es bliebe sonst im Rückblick hängen und bräche jede neue Verbindung ab."""
+    if isinstance(value, (set, frozenset)):
+        return sorted(value, key=str)
+    if isinstance(value, bytes):
+        return value.hex()
+    return str(value)
+
+
 def _sse(event: dict) -> str:
-    return f"id: {event['id']}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n"
+    data = json.dumps(event, ensure_ascii=False, default=_jsonable)
+    return f"id: {event['id']}\ndata: {data}\n\n"
 
 
 bus = EventBus()
