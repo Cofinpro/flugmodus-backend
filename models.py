@@ -60,6 +60,19 @@ class Redemption(SQLModel, table=True):
     redeemed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
+class SpendTranscript(SQLModel, table=True):
+    """Erstes Zahlungs-Transcript einer eingelösten Münze. Kommt dieselbe Münze mit einer anderen
+    Challenge noch einmal, ergeben die beiden offengelegten Hälften per XOR die Identität u."""
+
+    id: int | None = Field(default=None, primary_key=True)
+    coin_id: bytes = Field(unique=True, index=True)
+    wallet_id: bytes  # Empfänger (empfaenger_id) – geht in die Challenge ein
+    nonce: bytes
+    pairs: str  # JSON: [{"revealed", "salt", "other_hash"}, …] als Hex
+    account_id: str  # Konto, das die Münze eingereicht hat
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 

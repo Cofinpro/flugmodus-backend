@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Offline Bank Inc.</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23121419'/%3E%3Cpath fill='%23ffb547' transform='rotate(45 12 12) translate(2.4 2.4) scale(.8)' d='M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/design/flugmodus.css">
   <script src="/design/sky.js" defer></script>
   <style>
@@ -146,6 +147,91 @@
     }
     .home-log-clear:hover { border-color: var(--fm-ink); background: var(--fm-ink); color: var(--fm-amber); }
     .home-log-clear:focus-visible { outline: 3px solid var(--fm-amber); outline-offset: 2px; }
+
+    /* Münz-Chips: was von einer Münze öffentlich sichtbar ist */
+    .home-log .fm-log-cells > .fm-log-what { display: grid; gap: 6px; white-space: normal; }
+    .home-log .what-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .coin-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+    .coin-chips:empty { display: none; }
+    .coin-chip {
+      padding: 3px 6px 2px;
+      border: 1px solid var(--fm-paper-edge);
+      border-radius: 4px;
+      background: rgb(255 255 255 / 0.55);
+      color: var(--fm-ink);
+      font: 500 10.5px/1.2 var(--fm-mono);
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+    .coin-chip--blind { border-style: dashed; border-color: var(--fm-ink-soft); background: transparent; color: var(--fm-ink-soft); }
+    .coin-chip--more { color: var(--fm-ink-soft); }
+    .coin-legend { margin: 14px 0 0; font-size: 12.5px; line-height: 1.8; color: var(--fm-ink-soft); }
+    .coin-legend em { font-family: var(--fm-serif); font-size: 1.15em; color: var(--fm-ink); }
+    .home[data-state="idle"] .coin-legend { display: none; }
+
+    /* Doppelausgabe: Knopf in der Zeile und Erklär-Dialog */
+    .reveal-btn {
+      justify-self: start;
+      padding: 5px 10px;
+      border: var(--fm-line) solid var(--fm-red);
+      border-radius: 999px;
+      background: none;
+      color: var(--fm-red);
+      font: 600 10px/1 var(--fm-mono);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .reveal-btn:hover { background: var(--fm-red); color: #fff; }
+    .reveal {
+      width: min(760px, calc(100% - 32px));
+      max-height: 88vh;
+      padding: 0;
+      border: 0;
+      border-radius: var(--fm-radius-ticket);
+      background: var(--fm-paper-sheen), var(--fm-paper);
+      color: var(--fm-ink);
+      font-family: var(--fm-sans);
+      filter: var(--fm-shadow-ticket);
+    }
+    .reveal::backdrop { background: rgb(7 9 17 / 0.72); backdrop-filter: blur(3px); }
+    .reveal__card { padding: 28px 32px 24px; }
+    .reveal__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 8px; }
+    .reveal__kicker { margin: 0 0 6px; font: 600 11px var(--fm-mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--fm-red); }
+    .reveal__title { margin: 0; font-size: 24px; letter-spacing: -0.02em; }
+    .reveal__close {
+      flex: none; width: 40px; height: 40px; border: 0; border-radius: 50%;
+      background: var(--fm-ink); color: var(--fm-paper); font-size: 16px; cursor: pointer;
+    }
+    .reveal__close:hover { color: var(--fm-amber); }
+    .reveal__step { padding: 18px 0 4px; border-top: 1px solid var(--fm-paper-edge); margin-top: 14px; }
+    .reveal__step h4 { margin: 0 0 8px; font-size: 16px; letter-spacing: -0.01em; }
+    .reveal__text { margin: 8px 0 0; font-size: 14px; line-height: 1.5; color: var(--fm-ink-soft); }
+    .reveal__pays { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .reveal__pay { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--fm-paper-edge); border-radius: 10px; }
+    .reveal__label { font: 600 10px var(--fm-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--fm-ink-soft); }
+    .reveal__mono { font: 500 12px/1.4 var(--fm-mono); letter-spacing: 0.02em; }
+    .reveal__pairs { display: grid; grid-template-columns: 40px 1fr 1fr; gap: 2px 10px; margin-top: 10px; }
+    .reveal__head { font: 600 10px var(--fm-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--fm-ink-soft); padding-bottom: 4px; }
+    .reveal__cell { display: grid; gap: 2px; padding: 5px 8px; border-radius: 6px; color: var(--fm-ink-soft); font-size: 12px; }
+    .reveal__cell .reveal__mono { font-size: 11px; opacity: 0.7; }
+    .reveal__cell--both { background: color-mix(in srgb, var(--fm-amber) 22%, transparent); color: var(--fm-ink); }
+    .reveal__cell--both .reveal__mono { opacity: 1; }
+    .reveal__j { align-content: center; font: 700 13px var(--fm-mono); }
+    .reveal__bit { font: 600 10px var(--fm-mono); letter-spacing: 0.08em; }
+    .reveal__xor { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; align-items: baseline; margin-top: 10px; padding: 14px 16px; border-radius: 12px; background: var(--fm-ink); color: var(--fm-paper); }
+    .reveal__xor .reveal__label { color: rgb(243 238 228 / 0.7); }
+    .reveal__xor .reveal__mono { font-size: 14px; }
+    .reveal__label--sum { padding-top: 6px; border-top: 1px solid rgb(243 238 228 / 0.3); }
+    .reveal__mono--u { color: var(--fm-amber); font-weight: 700; }
+    .reveal__xor .reveal__mono--u { padding-top: 6px; border-top: 1px solid rgb(243 238 228 / 0.3); }
+    .reveal__verdict { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 8px 0 0; font-size: 18px; }
+    .reveal__verdict .reveal__mono--u { color: var(--fm-red); }
+    .reveal__done {
+      width: 100%; margin-top: 20px; padding: 14px; border: var(--fm-line) solid var(--fm-ink); border-radius: var(--fm-radius);
+      background: var(--fm-ink); color: var(--fm-paper); font: 600 15px var(--fm-sans); cursor: pointer;
+    }
+    .reveal__done:hover { color: var(--fm-amber); }
   </style>
 </head>
 <body class="fm-page">
@@ -208,9 +294,28 @@
         <div class="fm-log-body" id="log">
           <p class="fm-log-empty">Noch ruhig am Gate — <em>gleich geht's los.</em></p>
         </div>
+        <p class="coin-legend">
+          <code class="coin-chip">9c2e 4f1a…</code> Münz-ID – Zufallszahl, nichts über den Zahler ·
+          <code class="coin-chip coin-chip--blind">⌀ 3fa1 9c02…</code> verblendet – mehr sieht die Bank beim Abheben nicht.
+          <em>Die beiden lassen sich nicht verknüpfen.</em>
+        </p>
       </section>
     </div>
   </main>
+
+  <dialog class="reveal" id="reveal" aria-labelledby="reveal-title">
+    <div class="reveal__card">
+      <header class="reveal__header">
+        <div>
+          <p class="reveal__kicker">Doppelausgabe enttarnt</p>
+          <h3 class="reveal__title" id="reveal-title"></h3>
+        </div>
+        <button type="button" class="reveal__close" data-close aria-label="Schließen">✕</button>
+      </header>
+      <div class="reveal__body"></div>
+      <button type="button" class="reveal__done" data-close>Schließen</button>
+    </div>
+  </dialog>
 
   <script>
     // QR-Umschalter: Registrieren (Link auf die Signup-Seite der App) oder Anmelden (Backend-Adresse für den App-Scanner)
@@ -301,13 +406,43 @@
     let clearedAt = 0;
     try { clearedAt = Number(localStorage.getItem(CLEARED_KEY)) || 0; } catch {}
     const emptyNote = log.querySelector(".fm-log-empty");
-    // payment_deposited und double_spend_detected kommen, sobald das Backend Einreichungen kennt
+    const SYNC_REASONS = {
+      unknown_wallet_id: "Unbekannte Wallet",
+      no_coins: "Einreichung ohne Münzen",
+      duplicate_coin_in_request: "Münze doppelt in der Einreichung",
+      unknown_coin_value: "Unbekannter Münzwert",
+      invalid_coin: "Ungültige Münzsignatur",
+      coin_already_redeemed: "Münze schon eingelöst – Doppelausgabe",
+    };
+    const plural = (n) => (n === 1 ? "Münze" : "Münzen");
+    // chips: was von der Münze öffentlich sichtbar ist – zeigt, dass nichts davon auf den Zahler verweist
     const LOG_KINDS = {
       account_created: { code: "NEU", tone: "new", what: () => "Konto eröffnet" },
-      coin_issued: { code: "ABH", what: () => "Münze abgehoben", amount: (e) => [`${e.amount} €`, "out"] },
+      coin_issued: {
+        code: "ABH",
+        what: () => "Münze abgehoben",
+        amount: (e) => [`${e.amount} €`, "out"],
+        chips: (e) => (e.blinded ? [{ hex: e.blinded, blind: true }] : []),
+      },
+      account_synced: {
+        code: "ZHL",
+        tone: "pay",
+        what: (e) => `${e.coins?.length ?? 0} ${plural(e.coins?.length ?? 0)} eingereicht · Zahler anonym`,
+        amount: (e) => [`+${e.credited} €`, "in"],
+        chips: (e) => (e.coins ?? []).map((hex) => ({ hex })),
+      },
+      sync_failed: { code: "STOP", tone: "alert", alert: true, what: (e) => SYNC_REASONS[e.reason] ?? "Einreichung abgelehnt" },
       cheating_detected: { code: "STOP", tone: "alert", alert: true, what: () => "Betrug beim Abheben erkannt" },
       payment_deposited: { code: "ZHL", tone: "pay", what: () => "Zahlung erhalten · Zahler anonym", amount: (e) => [`+${e.amount} €`, "in"] },
-      double_spend_detected: { code: "DOPPEL", tone: "alert", alert: true, what: () => "Münze doppelt ausgegeben – enttarnt", amount: (e) => [`${e.amount} €`, ""] },
+      double_spend_detected: {
+        code: "DOPPEL",
+        tone: "alert",
+        alert: true,
+        what: (e) => `Münze doppelt ausgegeben – ${e.username ?? "Zahler"} enttarnt`,
+        amount: (e) => [`${e.amount} €`, ""],
+        chips: (e) => [{ hex: e.coin_id }],
+        explain: true, // Knopf: wie die Bank den Zahler aufgedeckt hat
+      },
     };
     const shown = new Set();
     const home = document.getElementById("home");
@@ -348,7 +483,7 @@
         ["fm-log-time", new Date(event.time).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })],
         [`fm-log-code${kind.tone ? ` fm-log-code--${kind.tone}` : ""}`, kind.code],
         ["fm-log-who", event.username ?? "Anonym"],
-        [`fm-log-what${kind.alert ? " fm-log-what--alert" : ""}`, kind.what(event)],
+        [`fm-log-what${kind.alert ? " fm-log-what--alert" : ""}`, ""],
         [`fm-log-amount${direction ? ` fm-log-amount--${direction}` : ""}`, amount],
       ];
       for (const [className, text] of parts) {
@@ -357,8 +492,43 @@
         cell.textContent = text;
         cells.append(cell);
       }
+      const what = cells.querySelector(".fm-log-what");
+      what.innerHTML = '<span class="what-text"></span><span class="coin-chips"></span>';
+      what.firstChild.textContent = kind.what(event);
       row.append(cells);
+      renderChips(row, kind.chips?.(event) ?? []); // erst nach dem Einhängen – sucht .coin-chips in der Zeile
+      if (kind.explain && event.pairs) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "reveal-btn";
+        button.textContent = "Wie wurde das erkannt?";
+        button.addEventListener("click", () => openReveal(event));
+        what.append(button);
+      }
       return row;
+    }
+
+    const MAX_CHIPS = 3;
+    const CHIP_TITLE = {
+      coin: "Münz-ID – eine Zufallszahl. Sie enthält nichts über den Zahler.",
+      blind: "Verblendeter Wert – mehr sieht die Bank beim Abheben nicht. Er passt zu keiner Münz-ID.",
+    };
+    function renderChips(row, chips) {
+      const box = row.querySelector(".coin-chips");
+      box.replaceChildren();
+      for (const chip of chips.slice(0, MAX_CHIPS)) {
+        const el = document.createElement("code");
+        el.className = `coin-chip${chip.blind ? " coin-chip--blind" : ""}`;
+        el.textContent = `${chip.blind ? "⌀ " : ""}${chip.hex.slice(0, 8).match(/.{1,4}/g).join(" ")}…`;
+        el.title = `${CHIP_TITLE[chip.blind ? "blind" : "coin"]}\n${chip.hex}`;
+        box.append(el);
+      }
+      if (chips.length > MAX_CHIPS) {
+        const more = document.createElement("span");
+        more.className = "coin-chip coin-chip--more";
+        more.textContent = `+${chips.length - MAX_CHIPS}`;
+        box.append(more);
+      }
     }
 
     // Passt großes Ticket + Tabelle untereinander ins Fenster? Sonst weicht das Ticket aus.
@@ -378,7 +548,8 @@
 
     function showWithdrawal(group, bump) {
       const { row, count, total } = group;
-      row.querySelector(".fm-log-what").textContent = count === 1 ? "Münze abgehoben" : `${count} Münzen abgehoben`;
+      row.querySelector(".what-text").textContent = count === 1 ? "Münze abgehoben" : `${count} Münzen abgehoben`;
+      renderChips(row, group.chips);
       row.querySelector(".fm-log-amount").textContent = `${total} €`;
       // noch am Aufklappen? Dann nur den Text ändern, nicht die Animation abschneiden
       if (!bump || performance.now() - row.born < 700) return;
@@ -429,10 +600,11 @@
           group.count += 1;
           group.total += event.amount;
           group.last = time;
+          if (event.blinded) group.chips.push({ hex: event.blinded, blind: true });
           if (group.row) showWithdrawal(group, fresh); // sonst übernimmt es die Zeile, sobald sie da ist
           return;
         }
-        group = { count: 1, total: event.amount, row: null, last: time };
+        group = { count: 1, total: event.amount, row: null, last: time, chips: event.blinded ? [{ hex: event.blinded, blind: true }] : [] };
         withdrawals.set(event.username, group);
       }
       clearTimeout(idleTimer);
@@ -467,6 +639,85 @@
       log.append(emptyNote);
       updateClearButton();
       goTo("idle");
+    });
+
+    // Erklärung einer Doppelausgabe: was von der Münze offengelegt wurde und wie daraus u folgt
+    const reveal = document.getElementById("reveal");
+    const hexGroups = (hex) => hex.match(/.{1,2}/g).join(" ");
+    function el(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+    function openReveal(e) {
+      const body = reveal.querySelector(".reveal__body");
+      body.replaceChildren();
+      reveal.querySelector(".reveal__title").textContent = `${e.username ?? "Unbekannt"} hat eine Münze zweimal ausgegeben`;
+      const diff = e.pairs.filter((p) => p.bit_first !== p.bit_second);
+      const half = (bit) => (bit === 0 ? "maskⱼ" : "maskⱼ ⊕ u");
+
+      // 1 · Zwei Zahlungen, dieselbe Münze
+      const s1 = el("section", "reveal__step");
+      s1.append(el("h4", "", "1 · Dieselbe Münze, zwei Zahlungen"));
+      const coin = el("p", "reveal__text", "Münz-ID ");
+      coin.append(el("code", "coin-chip", hexGroups(e.coin_id.slice(0, 16)) + " …"));
+      s1.append(coin);
+      const pays = el("div", "reveal__pays");
+      for (const [label, who, part] of [["Zahlung 1", e.first_merchant, e.first], ["Zahlung 2", e.merchant, e.second]]) {
+        const card = el("div", "reveal__pay");
+        card.append(el("span", "reveal__label", label), el("strong", "", `an ${who ?? "?"}`), el("code", "reveal__mono", `nonce ${part.nonce.slice(0, 12)}…`));
+        pays.append(card);
+      }
+      s1.append(pays);
+
+      // 2 · Welche Hälfte jede Zahlung geöffnet hat
+      const s2 = el("section", "reveal__step");
+      s2.append(el("h4", "", "2 · Jede Zahlung öffnet pro Paar genau eine Hälfte"));
+      s2.append(el("p", "reveal__text", "Welche, bestimmt die Challenge SHA-256(Münz-ID ‖ Empfänger ‖ nonce): Bit 0 → maskⱼ, Bit 1 → maskⱼ ⊕ u. Andere Zahlung, andere Challenge."));
+      const grid = el("div", "reveal__pairs");
+      grid.append(el("span", "reveal__head", "Paar"), el("span", "reveal__head", "Zahlung 1"), el("span", "reveal__head", "Zahlung 2"));
+      for (const p of e.pairs) {
+        const both = p.bit_first !== p.bit_second;
+        const cls = both ? "reveal__cell reveal__cell--both" : "reveal__cell";
+        grid.append(el("span", `${cls} reveal__j`, String(p.j + 1)));
+        for (const [bit, value] of [[p.bit_first, p.revealed_first], [p.bit_second, p.revealed_second]]) {
+          const cell = el("span", cls);
+          cell.append(el("span", "reveal__bit", `${bit} · ${half(bit)}`), el("code", "reveal__mono", both ? hexGroups(value) : "gleiche Hälfte – verrät nichts"));
+          grid.append(cell);
+        }
+      }
+      s2.append(grid);
+      s2.append(el("p", "reveal__text", `In ${diff.length} von 12 Paaren unterscheiden sich die Bits – dort liegen beide Hälften offen.`));
+
+      // 3 · XOR
+      const s3 = el("section", "reveal__step");
+      s3.append(el("h4", "", "3 · Beide Hälften XOR-verknüpft"));
+      const p0 = diff[0];
+      const mask = p0.bit_first === 0 ? p0.revealed_first : p0.revealed_second;
+      const masked = p0.bit_first === 0 ? p0.revealed_second : p0.revealed_first;
+      const xor = el("div", "reveal__xor");
+      xor.append(
+        el("span", "reveal__label", `Paar ${p0.j + 1}: maskⱼ`), el("code", "reveal__mono", hexGroups(mask)),
+        el("span", "reveal__label", "⊕  maskⱼ ⊕ u"), el("code", "reveal__mono", hexGroups(masked)),
+        el("span", "reveal__label reveal__label--sum", "=  u"), el("code", "reveal__mono reveal__mono--u", hexGroups(p0.xor)),
+      );
+      s3.append(xor);
+      s3.append(el("p", "reveal__text", diff.length > 1 ? `Die Maske hebt sich auf. Alle ${diff.length} Paare mit verschiedenen Bits ergeben dasselbe u.` : "Die Maske hebt sich auf, übrig bleibt u."));
+
+      // 4 · u gehört zu einem Konto
+      const s4 = el("section", "reveal__step");
+      s4.append(el("h4", "", "4 · u ist die Identität des Zahlers"));
+      const who = el("p", "reveal__verdict");
+      who.append(el("code", "reveal__mono reveal__mono--u", hexGroups(e.u)), el("span", "", "→"), el("strong", "", e.username ?? "unbekanntes Konto"));
+      s4.append(who);
+      s4.append(el("p", "reveal__text", "Bei nur einer Zahlung sieht die Bank pro Paar nur eine Hälfte – maskⱼ allein oder maskⱼ ⊕ u allein sagt nichts über u. Erst die zweite Ausgabe derselben Münze deckt den Zahler auf."));
+
+      body.append(s1, s2, s3, s4);
+      reveal.showModal();
+    }
+    reveal.addEventListener("click", (event) => {
+      if (event.target === reveal || event.target.closest("[data-close]")) reveal.close(); // Hintergrund, ✕ oder Schließen
     });
 
     const events = new EventSource("/api/events");

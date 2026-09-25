@@ -35,3 +35,20 @@ def compute_coin_id(
         for pair in range(NUM_PAIRS)
     )
     return int.from_bytes(hashlib.sha256(pair_hashes).digest(), "big")
+
+
+def challenge_bits(coin_id: bytes, empfaenger_id: bytes, nonce: bytes) -> list[int]:
+    """Welche Hälfte der Zahler pro Paar öffnen muss: SHA-256(coin_id ‖ empfaenger_id ‖ nonce), MSB zuerst."""
+    digest = hashlib.sha256(coin_id + empfaenger_id + nonce).digest()
+    return [(digest[j >> 3] >> (7 - (j & 7))) & 1 for j in range(NUM_PAIRS)]
+
+
+def transcript_coin_id(
+    bits: list[int], pairs: list[tuple[bytes, bytes, bytes]]
+) -> bytes:
+    """coin_id aus einem Transcript: geöffnete Hälfte hashen, mit dem mitgeschickten Hash zu X/Y ordnen."""
+    hashes = b""
+    for bit, (revealed, salt, other_hash) in zip(bits, pairs):
+        opened = short_hash(revealed + salt)
+        hashes += opened + other_hash if bit == 0 else other_hash + opened
+    return hashlib.sha256(hashes).digest()
