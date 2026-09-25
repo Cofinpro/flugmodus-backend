@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, status
+from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Field, Session, SQLModel
 
 from models import Account, create_db_and_tables, engine
@@ -16,6 +17,13 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def get_session() -> Generator[Session]:
@@ -39,7 +47,7 @@ class AccountPublic(SQLModel):
     created_at: datetime
 
     @classmethod
-    def from_account(cls, account: Account) -> "AccountPublic":
+    def from_account(cls, account: Account) -> AccountPublic:
         return cls(
             account_id=account.account_id,
             username=account.username,
