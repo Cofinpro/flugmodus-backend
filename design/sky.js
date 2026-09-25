@@ -28,7 +28,16 @@
     sky.setAttribute("viewBox", "0 0 1440 900");
     sky.setAttribute("preserveAspectRatio", "xMidYMid slice");
     sky.setAttribute("aria-hidden", "true");
-    const stars = STARS.map(([cx, cy, r]) => `<circle class="fm-star" cx="${cx}" cy="${cy}" r="${r}"/>`).join("");
+    // Stern = Punkt + Glanz (spitz zulaufende Lichtstrahlen, unsichtbar bis die Maus nahe kommt)
+    const RAYS = "M0 -16 L0.7 0 L0 16 L-0.7 0 Z M-16 0 L0 -0.7 L16 0 L0 0.7 Z";
+    const DIAGONALS = "M-7 -7 L0.4 -0.4 L7 7 L-0.4 0.4 Z M7 -7 L0.4 0.4 L-7 7 L-0.4 -0.4 Z";
+    const stars = STARS.map(([cx, cy, r], i) => `
+      <g transform="translate(${cx} ${cy})">
+        <g class="fm-star-shine"><g class="fm-star-rays" style="animation-delay: ${-(i * 0.37) % 3}s">
+          <path d="${RAYS}"/><path class="fm-star-diagonals" d="${DIAGONALS}"/>
+        </g></g>
+        <circle class="fm-star" r="${r}"/>
+      </g>`).join("");
     const route = withRoute
       ? `<path id="fm-flight" class="fm-sky-route" d="M -40 780 C 320 520, 520 140, 900 170 S 1380 420, 1500 120"/>
          <g class="fm-sky-plane">
@@ -56,6 +65,7 @@
           t = Math.max(0, 1 - distance / reach) ** 1.5;
         }
         star.style.setProperty("--t", t.toFixed(3));
+        star.previousElementSibling.style.setProperty("--t", t.toFixed(3)); // Glanz daneben
       }
     }
     const schedule = () => { frame ||= requestAnimationFrame(glow); };
