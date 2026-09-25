@@ -10,6 +10,7 @@ import segno
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Field, Session, SQLModel, select
@@ -23,6 +24,7 @@ from schemas import (
     IssueStartResponse,
 )
 from utils import (
+    COIN_VALUE,
     NUM_CANDIDATES,
     NUM_PAIRS,
     RSA_PUBLIC_EXPONENT,
@@ -49,6 +51,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.mount("/design", StaticFiles(directory="design"), name="design")
 setup_admin(app, engine)
 
 app.add_middleware(
@@ -71,6 +74,13 @@ class AccountCreate(SQLModel):
     username: str = Field(min_length=1, max_length=64)
 
 
+class AccountCreated(AccountPublic):
+    """Antwort auf die Anmeldung: Konto plus öffentlicher Schlüssel der Bank."""
+
+    bank_public_key: str  # Modulus n, hex
+    bank_exponent: int  # e
+
+
 def parse_hex_values(hex_values: list[str]) -> list[bytes]:
     """Hex-Liste → Bytes; genau NUM_PAIRS Werte à VALUE_BYTES, sonst 400."""
     try:
@@ -85,17 +95,17 @@ def parse_hex_values(hex_values: list[str]) -> list[bytes]:
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request) -> HTMLResponse:
     qr_svg = segno.make(PUBLIC_URL, error="m").svg_inline(
-        scale=8, border=0, dark="#121419"
+        scale=8, border=0, dark="#121419", omitsize=True
     )
     return templates.TemplateResponse(request, "home.html", {"qr_svg": qr_svg})
 
 
 @app.post(
     "/accounts",
-    response_model=AccountPublic,
+    response_model=AccountCreated,
     status_code=status.HTTP_201_CREATED,
 )
-def create_account(account_in: AccountCreate, session: SessionDep) -> AccountPublic:
+def create_account(account_in: AccountCreate, session: SessionDep) -> AccountCreated:
     account = Account(username=account_in.username)
     session.add(account)
     try:
@@ -106,7 +116,12 @@ def create_account(account_in: AccountCreate, session: SessionDep) -> AccountPub
             status.HTTP_409_CONFLICT, "Benutzername ist bereits vergeben"
         )
     session.refresh(account)
-    return AccountPublic.from_account(account)
+    modulus, _ = SIGNING_KEYS[COIN_VALUE]  # nur der öffentliche Teil geht raus
+    return AccountCreated(
+        **AccountPublic.from_account(account).model_dump(),
+        bank_public_key=format(modulus, "x"),
+        bank_exponent=RSA_PUBLIC_EXPONENT,
+    )
 
 
 @app.get("/accounts", response_model=list[AccountPublic])
