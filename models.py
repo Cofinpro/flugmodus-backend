@@ -40,7 +40,13 @@ class AccountPublic(SQLModel):
 
 
 class Emission(SQLModel, table=True):
+    """Eine an eine Wallet ausgegebene Münze (Ergebnis von /api/issue/finish)."""
+
     id: int | None = Field(default=None, primary_key=True)
+    wallet_id: bytes = Field(index=True)
+    coin_value: int
+    coin: bytes  # Blindsignatur, 128 Byte
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class Redemption(SQLModel, table=True):

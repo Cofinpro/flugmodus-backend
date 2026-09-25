@@ -33,3 +33,12 @@ class IssueFinishRequest(BaseModel):
 
 class IssueFinishResponse(BaseModel):
     blind_signature: Hex  # hex, 256 Zeichen (128 Byte)
+
+
+class Coin(BaseModel):
+    coin_value: int
+    coin: Hex  # hex, 256 Zeichen (128 Byte) – die Blindsignatur
+
+
+class WalletCoinsRequest(BaseModel):
+    wallet_id: Hex
