@@ -8,3 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
+
+database.db
+
+keys.json
