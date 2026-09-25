@@ -96,6 +96,9 @@ SessionDep = Annotated[Session, Depends(get_session)]
 
 class AccountCreate(SQLModel):
     username: str = Field(min_length=1, max_length=64)
+    photo: str | None = Field(
+        default=None, max_length=400_000
+    )  # data-URL des Selfies, optional
 
 
 class AccountCreated(AccountPublic):
@@ -142,7 +145,7 @@ async def root(request: Request) -> HTMLResponse:
     status_code=status.HTTP_201_CREATED,
 )
 def create_account(account_in: AccountCreate, session: SessionDep) -> AccountCreated:
-    account = Account(username=account_in.username)
+    account = Account(username=account_in.username, photo=account_in.photo)
     session.add(account)
     try:
         session.commit()
@@ -336,22 +339,34 @@ def sync_account(request: SyncRequest, session: SessionDep) -> SyncResponse:
             coins=sorted(coin.coin_id for coin in accepted),
             to=wallet_id.hex(),
         )
+    # Abgelehnte Münzen einer Einreichung zusammenfassen: eine Zeile pro Transaktion statt pro Münze.
+    # Wird dabei eine Doppelausgabe aufgedeckt, erscheint nur sie (pro enttarntem Zahler eine Zeile,
+    # mit einer Münze als Beispiel für die Erklärung).
     coins_by_id = {coin.coin_id: coin for coin in request.coins}
-    for item in rejected:  # genau ein Eintrag pro abgelehnter Münze
+    exposed: dict[str, dict] = {}  # u → Ereignis
+    unexplained: dict[str, list[str]] = {}  # Grund → coin_ids
+    for item in rejected:
+        revealed = None
         if item.reason == "coin_already_redeemed":
             # beide Transcripts da? Dann Zahler per XOR der offengelegten Hälften aufdecken
             revealed = double_spend.reveal(
                 session, coins_by_id[item.coin_id], wallet_id, account
             )
-            if revealed is not None:
-                bus.publish("double_spend_detected", **revealed)
-                continue
-        bus.publish(
-            "sync_failed",
-            username=account.username,
-            reason=item.reason,
-            coin_id=item.coin_id,
+        if revealed is None:
+            unexplained.setdefault(item.reason, []).append(item.coin_id)
+            continue
+        event = exposed.setdefault(
+            revealed["u"], {**revealed, "coins": [], "amount": 0}
         )
+        event["coins"].append(item.coin_id)
+        event["amount"] += coins_by_id[item.coin_id].coin_value
+    for event in exposed.values():
+        bus.publish("double_spend_detected", **event)
+    if not exposed:
+        for reason, coin_ids in unexplained.items():
+            bus.publish(
+                "sync_failed", username=account.username, reason=reason, coins=coin_ids
+            )
 
     return SyncResponse(
         account_id=account.account_id,

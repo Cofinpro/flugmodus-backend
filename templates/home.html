@@ -154,9 +154,12 @@
     .coin-chips { display: flex; flex-wrap: wrap; gap: 4px; }
     .coin-chips:empty { display: none; }
     .coin-chip {
-      padding: 3px 6px 2px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px 2px 3px;
       border: 1px solid var(--fm-paper-edge);
-      border-radius: 4px;
+      border-radius: 999px;
       background: rgb(255 255 255 / 0.55);
       color: var(--fm-ink);
       font: 500 10.5px/1.2 var(--fm-mono);
@@ -164,10 +167,34 @@
       white-space: nowrap;
     }
     .coin-chip--blind { border-style: dashed; border-color: var(--fm-ink-soft); background: transparent; color: var(--fm-ink-soft); }
-    .coin-chip--more { color: var(--fm-ink-soft); }
-    .coin-legend { margin: 14px 0 0; font-size: 12.5px; line-height: 1.8; color: var(--fm-ink-soft); }
-    .coin-legend em { font-family: var(--fm-serif); font-size: 1.15em; color: var(--fm-ink); }
-    .home[data-state="idle"] .coin-legend { display: none; }
+    .coin-chip--more { padding-left: 8px; color: var(--fm-ink-soft); }
+    .coin-chip--more::before { display: none; }
+    /* kleine Goldmünze: Glanzlicht, geprägter Rand, € in der Mitte */
+    .coin-chip::before {
+      content: "€";
+      display: grid;
+      place-items: center;
+      flex: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 32% 28%, #fff6d8 0 12%, transparent 34%),
+        radial-gradient(circle, #ffcf6e 0 55%, #e8891c 56% 64%, #ffb547 65% 100%);
+      box-shadow: inset 0 -1px 0 rgb(0 0 0 / 0.25), 0 1px 1.5px rgb(0 0 0 / 0.25);
+      color: #8a4b08;
+      font: 800 8.5px/1 var(--fm-sans);
+      text-shadow: 0 0.5px 0 rgb(255 255 255 / 0.6);
+    }
+    /* verblendet: dieselbe Münze, aber hinter Milchglas – die Bank sieht nur einen Schatten */
+    .coin-chip--blind::before {
+      content: "?";
+      background: repeating-linear-gradient(45deg, #d9d2c4 0 2px, #c6bdad 2px 4px);
+      box-shadow: inset 0 0 0 1px rgb(107 100 87 / 0.5);
+      color: var(--fm-ink-soft);
+      text-shadow: none;
+      filter: blur(0.2px);
+    }
 
     /* Doppelausgabe: Knopf in der Zeile und Erklär-Dialog */
     .reveal-btn {
@@ -232,12 +259,90 @@
       background: var(--fm-ink); color: var(--fm-paper); font: 600 15px var(--fm-sans); cursor: pointer;
     }
     .reveal__done:hover { color: var(--fm-amber); }
+
+    /* Beim Laden erst zeigen, wenn der Rückblick das Layout festgelegt hat */
+    .home { transition: opacity 0.35s ease; }
+    .home--booting { opacity: 0; }
+
+    /* Steckbrief der überführten Person */
+    .reveal__step--mug { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+    .reveal__facts { flex: 1; min-width: 220px; }
+    .reveal__hint { margin: 8px 0 0; font-size: 13px; line-height: 1.5; color: var(--fm-ink-soft); font-style: italic; }
+    .mugshot {
+      position: relative;
+      width: 180px;
+      height: 180px;
+      flex: none;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #6b6f76;
+      box-shadow: inset 0 0 0 3px var(--fm-ink);
+    }
+    .mugshot__photo { width: 100%; height: 100%; object-fit: cover; filter: grayscale(0.7) contrast(1.05); }
+    .mugshot__photo--none { display: grid; place-items: center; color: #eee; font: 600 12px var(--fm-mono); }
+    /* Höhenskala hinter der Person */
+    .mugshot::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(to top, rgb(255 255 255 / 0.25) 0 1px, transparent 1px 18px);
+      pointer-events: none;
+    }
+    /* Gefängnisgitter */
+    .mugshot__bars {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(90deg, transparent 0 26px, rgb(20 22 26 / 0.92) 26px 33px);
+      pointer-events: none;
+    }
+    .mugshot__bars::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgb(20 22 26 / 0.92) 0 7px, transparent 7px), linear-gradient(0deg, rgb(20 22 26 / 0.92) 0 7px, transparent 7px);
+    }
+    .mugshot__plate {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      bottom: 8px;
+      display: grid;
+      gap: 2px;
+      padding: 5px 8px;
+      border-radius: 4px;
+      background: rgb(243 238 228 / 0.94);
+      box-shadow: 0 1px 4px rgb(0 0 0 / 0.4);
+      text-align: center;
+    }
+    .mugshot__name { font: 700 12px/1.1 var(--fm-mono); letter-spacing: 0.08em; color: var(--fm-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mugshot__crime { font: 700 9px var(--fm-mono); letter-spacing: 0.18em; color: var(--fm-red); }
+
+    /* Bitmuster der zwei Challenges */
+    .bits { display: grid; gap: 6px; margin-top: 12px; }
+    .bitline { display: flex; align-items: center; gap: 12px; }
+    .bitline__label { flex: none; width: 76px; font: 600 10px var(--fm-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--fm-ink-soft); text-align: right; }
+    .bitline__bits { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; flex: 1; }
+    .bit {
+      display: grid;
+      place-items: center;
+      height: 30px;
+      border-radius: 6px;
+      background: var(--fm-paper-edge);
+      color: var(--fm-ink-soft);
+      font: 700 13px var(--fm-mono);
+    }
+    .bit--collision { background: var(--fm-red); color: #fff; box-shadow: 0 0 0 2px color-mix(in srgb, var(--fm-red) 35%, transparent); }
+    .bit--mark { background: none; color: var(--fm-red); height: 16px; font-size: 12px; }
+
+    .reveal__bin { font: 600 15px/1.4 var(--fm-mono); letter-spacing: 0.18em; }
+    .reveal__bin--u { color: var(--fm-amber); }
+    .reveal__xor .reveal__bin--u { padding-top: 6px; border-top: 1px solid rgb(243 238 228 / 0.3); }
   </style>
 </head>
 <body class="fm-page">
   <main class="fm-center">
     <!-- Ruhe: großes Ticket + schmaler Log-Streifen. Betrieb: Tabelle links, kompaktes Ticket rechts -->
-    <div class="home" id="home" data-state="idle">
+    <div class="home home--booting" id="home" data-state="idle">
       <div class="home-onboard">
         <article class="fm-ticket fm-ticket--wide fm-ticket--arrive">
           <section class="fm-ticket-main">
@@ -294,11 +399,6 @@
         <div class="fm-log-body" id="log">
           <p class="fm-log-empty">Noch ruhig am Gate — <em>gleich geht's los.</em></p>
         </div>
-        <p class="coin-legend">
-          <code class="coin-chip">9c2e 4f1a…</code> Münz-ID – Zufallszahl, nichts über den Zahler ·
-          <code class="coin-chip coin-chip--blind">⌀ 3fa1 9c02…</code> verblendet – mehr sieht die Bank beim Abheben nicht.
-          <em>Die beiden lassen sich nicht verknüpfen.</em>
-        </p>
       </section>
     </div>
   </main>
@@ -431,16 +531,22 @@
         amount: (e) => [`+${e.credited} €`, "in"],
         chips: (e) => (e.coins ?? []).map((hex) => ({ hex })),
       },
-      sync_failed: { code: "STOP", tone: "alert", alert: true, what: (e) => SYNC_REASONS[e.reason] ?? "Einreichung abgelehnt" },
+      sync_failed: {
+        code: "STOP",
+        tone: "alert",
+        alert: true,
+        what: (e) => `${SYNC_REASONS[e.reason] ?? "Einreichung abgelehnt"}${e.coins?.length > 1 ? ` · ${e.coins.length} Münzen` : ""}`,
+        chips: (e) => (e.coins ?? []).map((hex) => ({ hex })),
+      },
       cheating_detected: { code: "STOP", tone: "alert", alert: true, what: () => "Betrug beim Abheben erkannt" },
       payment_deposited: { code: "ZHL", tone: "pay", what: () => "Zahlung erhalten · Zahler anonym", amount: (e) => [`+${e.amount} €`, "in"] },
       double_spend_detected: {
         code: "DOPPEL",
         tone: "alert",
         alert: true,
-        what: (e) => `Münze doppelt ausgegeben – ${e.username ?? "Zahler"} enttarnt`,
+        what: (e) => `${(e.coins?.length ?? 1) > 1 ? `${e.coins.length} Münzen` : "Münze"} doppelt ausgegeben – ${e.username ?? "Zahler"} enttarnt`,
         amount: (e) => [`${e.amount} €`, ""],
-        chips: (e) => [{ hex: e.coin_id }],
+        chips: (e) => (e.coins ?? [e.coin_id]).map((hex) => ({ hex })),
         explain: true, // Knopf: wie die Bank den Zahler aufgedeckt hat
       },
     };
@@ -519,7 +625,7 @@
       for (const chip of chips.slice(0, MAX_CHIPS)) {
         const el = document.createElement("code");
         el.className = `coin-chip${chip.blind ? " coin-chip--blind" : ""}`;
-        el.textContent = `${chip.blind ? "⌀ " : ""}${chip.hex.slice(0, 8).match(/.{1,4}/g).join(" ")}…`;
+        el.textContent = `${chip.hex.slice(0, 8).match(/.{1,4}/g).join(" ")}…`;
         el.title = `${CHIP_TITLE[chip.blind ? "blind" : "coin"]}\n${chip.hex}`;
         box.append(el);
       }
@@ -584,15 +690,9 @@
       rows.slice(LOG_ROWS).forEach(removeRow);
     }
 
-    function addToLog(event) {
-      // id + Zeit als Schlüssel: nach einem Server-Neustart beginnen die ids wieder bei 1
-      const key = `${event.id}-${event.time}`;
-      if (shown.has(key)) return;
-      shown.add(key);
-      // Rückblick beim Laden zeigen (ohne Animation) – außer er wurde hier schon geleert
+    // Zeile einfügen (inkl. Zusammenfassen von Abhebungen); gibt die neue Zeile zurück oder null
+    function insertEvent(event, fresh) {
       const time = Date.parse(event.time);
-      if (event.replay && time <= clearedAt) return;
-      const fresh = !event.replay;
       let group = null;
       if (event.kind === "coin_issued") {
         group = withdrawals.get(event.username);
@@ -602,29 +702,77 @@
           group.last = time;
           if (event.blinded) group.chips.push({ hex: event.blinded, blind: true });
           if (group.row) showWithdrawal(group, fresh); // sonst übernimmt es die Zeile, sobald sie da ist
-          return;
+          return null;
         }
         group = { count: 1, total: event.amount, row: null, last: time, chips: event.blinded ? [{ hex: event.blinded, blind: true }] : [] };
         withdrawals.set(event.username, group);
       }
+      emptyNote.remove();
+      const row = logRow(event);
+      if (!fresh) row.classList.remove("fm-log-row--fresh"); // Rückblick: ohne Aufklappen und Funkeln
+      row.born = performance.now();
+      log.prepend(row);
+      if (group) {
+        group.row = row;
+        row.onRemove = () => withdrawals.get(event.username) === group && withdrawals.delete(event.username);
+        showWithdrawal(group, false);
+      }
+      return row;
+    }
+
+    // Rückblick beim Laden: alle Zeilen auf einmal einsetzen und das Layout EINMAL festlegen –
+    // sonst wechselt es nach jeder einzelnen Zeile und die Tabelle flackert
+    let replayQueue = [];
+    // Bis das Layout feststeht, bleibt die Seite unsichtbar – sonst blitzt kurz der leere Streifen auf
+    function showHome() {
+      flushReplay();
+      home.classList.remove("home--booting");
+    }
+    function flushReplay() {
+      const queue = replayQueue;
+      replayQueue = [];
+      if (!queue.length) return;
+      queue.forEach((event) => insertEvent(event, false));
+      // überzählige Zeilen sofort weg, ohne Zuklapp-Animation (die würde das Layout wieder bewegen)
+      [...log.querySelectorAll(".fm-log-row")].slice(LOG_ROWS).forEach((row) => {
+        row.onRemove?.();
+        row.remove();
+      });
+      updateClearButton();
+      if (!log.querySelector(".fm-log-row") || targetState !== "idle") return;
+      home.dataset.state = targetState = "stacked"; // ohne View Transition
+      ticketCard.classList.add("fm-ticket--wide");
+      wideTicketHeight = ticketCard.offsetHeight;
+      const stackedHeight = wideTicketHeight + STACK_GAP + home.querySelector(".home-log").offsetHeight + PAGE_PADDING;
+      if (stackedHeight > innerHeight) {
+        home.dataset.state = targetState = "busy";
+        ticketCard.classList.remove("fm-ticket--wide");
+      }
+    }
+
+    function addToLog(event) {
+      // id + Zeit als Schlüssel: nach einem Server-Neustart beginnen die ids wieder bei 1
+      const key = `${event.id}-${event.time}`;
+      if (shown.has(key)) return;
+      shown.add(key);
+      // Rückblick beim Laden zeigen (ohne Animation) – außer er wurde hier schon geleert
+      if (event.replay) {
+        if (Date.parse(event.time) <= clearedAt) return;
+        replayQueue.push(event);
+        if (replayQueue.length === 1) setTimeout(flushReplay, 0); // der Rückblick kommt in einem Rutsch
+        return;
+      }
+      flushReplay();
       clearTimeout(idleTimer);
       // aus der Ruhe erst den Streifen zur Tabelle machen, dann klappt die Zeile auf
       const ready = targetState === "idle" ? goTo("stacked") : transition;
       ready.then(() => {
-        emptyNote.remove();
-        const row = logRow(event);
-        if (!fresh) row.classList.remove("fm-log-row--fresh"); // Rückblick: ohne Aufklappen und Funkeln
-        row.born = performance.now();
-        log.prepend(row);
-        if (group) {
-          group.row = row;
-          row.onRemove = () => withdrawals.get(event.username) === group && withdrawals.delete(event.username);
-          showWithdrawal(group, false); // Münzen, die schon während des Aufklappens kamen
-        }
+        const row = insertEvent(event, true);
+        if (!row) return;
         trimLog();
         updateClearButton();
-        setTimeout(checkSpace, reducedMotion || !fresh ? 0 : 650); // nach dem Aufklappen messen
-        if (fresh && !reducedMotion) {
+        setTimeout(checkSpace, reducedMotion ? 0 : 650); // nach dem Aufklappen messen
+        if (!reducedMotion) {
           for (let i = 0; i < 10; i++) setTimeout(() => window.FlugmodusSky?.sparkleAround(row, 30), 250 + i * 60);
         }
       });
@@ -653,65 +801,82 @@
     function openReveal(e) {
       const body = reveal.querySelector(".reveal__body");
       body.replaceChildren();
-      reveal.querySelector(".reveal__title").textContent = `${e.username ?? "Unbekannt"} hat eine Münze zweimal ausgegeben`;
+      reveal.querySelector(".reveal__title").textContent = `${e.username ?? "Unbekannt"} — auf frischer Tat ertappt`;
       const diff = e.pairs.filter((p) => p.bit_first !== p.bit_second);
-      const half = (bit) => (bit === 0 ? "maskⱼ" : "maskⱼ ⊕ u");
+      const toBin = (hex) => parseInt(hex.slice(0, 2), 16).toString(2).padStart(8, "0");
 
-      // 1 · Zwei Zahlungen, dieselbe Münze
-      const s1 = el("section", "reveal__step");
-      s1.append(el("h4", "", "1 · Dieselbe Münze, zwei Zahlungen"));
-      const coin = el("p", "reveal__text", "Münz-ID ");
-      coin.append(el("code", "coin-chip", hexGroups(e.coin_id.slice(0, 16)) + " …"));
-      s1.append(coin);
-      const pays = el("div", "reveal__pays");
-      for (const [label, who, part] of [["Zahlung 1", e.first_merchant, e.first], ["Zahlung 2", e.merchant, e.second]]) {
-        const card = el("div", "reveal__pay");
-        card.append(el("span", "reveal__label", label), el("strong", "", `an ${who ?? "?"}`), el("code", "reveal__mono", `nonce ${part.nonce.slice(0, 12)}…`));
-        pays.append(card);
+      // 1 · Steckbrief: Foto hinter Gittern
+      const s1 = el("section", "reveal__step reveal__step--mug");
+      const mug = el("div", "mugshot");
+      if (e.photo) {
+        mug.append(el("img", "mugshot__photo", undefined));
+        mug.querySelector("img").src = e.photo;
+      } else {
+        mug.append(el("div", "mugshot__photo mugshot__photo--none", "kein Foto"));
       }
-      s1.append(pays);
+      mug.append(el("div", "mugshot__bars"));
+      const plate = el("div", "mugshot__plate");
+      plate.append(el("span", "mugshot__name", e.username ?? "UNBEKANNT"), el("span", "mugshot__crime", "DOPPELAUSGABE"));
+      mug.append(plate);
+      s1.append(mug);
+      const facts = el("div", "reveal__facts");
+      facts.append(el("p", "reveal__text", `Dieselbe Münze bei zwei Zahlungen ausgegeben: an ${e.first_merchant ?? "?"} und an ${e.merchant ?? "?"}.`));
+      const coin = el("p", "reveal__text", "Tatmünze ");
+      coin.append(el("code", "coin-chip", hexGroups(e.coin_id.slice(0, 12)) + "…"));
+      if ((e.coins?.length ?? 1) > 1) coin.append(el("span", "", ` und ${e.coins.length - 1} weitere`));
+      facts.append(coin);
+      facts.append(el("p", "reveal__hint", "Eine Münze zeigen wir hier als Beweis – bei den anderen läuft es genauso."));
+      s1.append(facts);
 
-      // 2 · Welche Hälfte jede Zahlung geöffnet hat
+      // 2 · Die zwei Challenges als Bitmuster, Kollisionen markiert
       const s2 = el("section", "reveal__step");
-      s2.append(el("h4", "", "2 · Jede Zahlung öffnet pro Paar genau eine Hälfte"));
-      s2.append(el("p", "reveal__text", "Welche, bestimmt die Challenge SHA-256(Münz-ID ‖ Empfänger ‖ nonce): Bit 0 → maskⱼ, Bit 1 → maskⱼ ⊕ u. Andere Zahlung, andere Challenge."));
-      const grid = el("div", "reveal__pairs");
-      grid.append(el("span", "reveal__head", "Paar"), el("span", "reveal__head", "Zahlung 1"), el("span", "reveal__head", "Zahlung 2"));
-      for (const p of e.pairs) {
-        const both = p.bit_first !== p.bit_second;
-        const cls = both ? "reveal__cell reveal__cell--both" : "reveal__cell";
-        grid.append(el("span", `${cls} reveal__j`, String(p.j + 1)));
-        for (const [bit, value] of [[p.bit_first, p.revealed_first], [p.bit_second, p.revealed_second]]) {
-          const cell = el("span", cls);
-          cell.append(el("span", "reveal__bit", `${bit} · ${half(bit)}`), el("code", "reveal__mono", both ? hexGroups(value) : "gleiche Hälfte – verrät nichts"));
-          grid.append(cell);
+      s2.append(el("h4", "", "1 · Zwei Zahlungen, zwei Bitmuster"));
+      s2.append(el("p", "reveal__text", "Jede Zahlung würfelt aus Münze, Empfänger und nonce 12 Bits. Jedes Bit sagt, welche Hälfte eines Paars offengelegt wird: 0 = maskⱼ, 1 = maskⱼ ⊕ u."));
+      const bitsRow = (label, key) => {
+        const line = el("div", "bitline");
+        line.append(el("span", "bitline__label", label));
+        const track = el("div", "bitline__bits");
+        for (const p of e.pairs) {
+          const collision = p.bit_first !== p.bit_second;
+          track.append(el("span", `bit${collision ? " bit--collision" : ""}`, String(p[key])));
         }
-      }
-      s2.append(grid);
-      s2.append(el("p", "reveal__text", `In ${diff.length} von 12 Paaren unterscheiden sich die Bits – dort liegen beide Hälften offen.`));
+        line.append(track);
+        return line;
+      };
+      const bits = el("div", "bits");
+      bits.append(bitsRow("Zahlung 1", "bit_first"), bitsRow("Zahlung 2", "bit_second"));
+      const marks = el("div", "bitline");
+      marks.append(el("span", "bitline__label", ""));
+      const marktrack = el("div", "bitline__bits");
+      for (const p of e.pairs) marktrack.append(el("span", "bit bit--mark", p.bit_first !== p.bit_second ? "↑" : ""));
+      marks.append(marktrack);
+      bits.append(marks);
+      s2.append(bits);
+      s2.append(el("p", "reveal__text", `An ${diff.length} Stellen sind die Bits verschieden (↑). Nur dort legt der Zahler beide Hälften offen – und genau das ist sein Fehler.`));
 
-      // 3 · XOR
-      const s3 = el("section", "reveal__step");
-      s3.append(el("h4", "", "3 · Beide Hälften XOR-verknüpft"));
+      // 3 · XOR einer Kollision in binär → u
       const p0 = diff[0];
       const mask = p0.bit_first === 0 ? p0.revealed_first : p0.revealed_second;
       const masked = p0.bit_first === 0 ? p0.revealed_second : p0.revealed_first;
+      const s3 = el("section", "reveal__step");
+      s3.append(el("h4", "", `2 · Kollision an Stelle ${p0.j + 1}: beide Hälften XOR-verknüpft`));
+      s3.append(el("p", "reveal__text", "Eine Zahlung zeigt maskⱼ, die andere maskⱼ ⊕ u. XOR hebt die Maske auf und legt u frei (erstes Byte als Beispiel):"));
       const xor = el("div", "reveal__xor");
       xor.append(
-        el("span", "reveal__label", `Paar ${p0.j + 1}: maskⱼ`), el("code", "reveal__mono", hexGroups(mask)),
-        el("span", "reveal__label", "⊕  maskⱼ ⊕ u"), el("code", "reveal__mono", hexGroups(masked)),
-        el("span", "reveal__label reveal__label--sum", "=  u"), el("code", "reveal__mono reveal__mono--u", hexGroups(p0.xor)),
+        el("span", "reveal__label", "maskⱼ"), el("code", "reveal__bin", toBin(mask)),
+        el("span", "reveal__label", "⊕  maskⱼ ⊕ u"), el("code", "reveal__bin", toBin(masked)),
+        el("span", "reveal__label reveal__label--sum", "=  u"), el("code", "reveal__bin reveal__bin--u", toBin(p0.xor)),
       );
       s3.append(xor);
-      s3.append(el("p", "reveal__text", diff.length > 1 ? `Die Maske hebt sich auf. Alle ${diff.length} Paare mit verschiedenen Bits ergeben dasselbe u.` : "Die Maske hebt sich auf, übrig bleibt u."));
+      s3.append(el("p", "reveal__hint", diff.length > 1 ? `Alle ${diff.length} Kollisionen ergeben dasselbe u.` : "Diese eine Kollision genügt."));
 
-      // 4 · u gehört zu einem Konto
+      // 4 · u → Konto
       const s4 = el("section", "reveal__step");
-      s4.append(el("h4", "", "4 · u ist die Identität des Zahlers"));
+      s4.append(el("h4", "", "3 · u ist die Identität – und sie gehört einem Konto"));
       const who = el("p", "reveal__verdict");
-      who.append(el("code", "reveal__mono reveal__mono--u", hexGroups(e.u)), el("span", "", "→"), el("strong", "", e.username ?? "unbekanntes Konto"));
+      who.append(el("code", "reveal__mono reveal__mono--u", hexGroups(e.u.slice(0, 12)) + "…"), el("span", "", "→"), el("strong", "", e.username ?? "unbekanntes Konto"));
       s4.append(who);
-      s4.append(el("p", "reveal__text", "Bei nur einer Zahlung sieht die Bank pro Paar nur eine Hälfte – maskⱼ allein oder maskⱼ ⊕ u allein sagt nichts über u. Erst die zweite Ausgabe derselben Münze deckt den Zahler auf."));
+      s4.append(el("p", "reveal__hint", "Bei nur einer Zahlung bleibt pro Paar eine Hälfte verborgen – u kommt nie heraus. Erst die zweite Ausgabe überführt den Zahler."));
 
       body.append(s1, s2, s3, s4);
       reveal.showModal();
@@ -724,7 +889,9 @@
     events.onopen = () => {
       logStatus.textContent = "Live";
       logStatus.className = "fm-status";
+      setTimeout(showHome, 200); // Rückblick kommt direkt nach dem Öffnen – danach ist das Layout klar
     };
+    setTimeout(showHome, 1500); // falls der Stream gar nicht antwortet
     events.onerror = () => {
       logStatus.textContent = "Verbinde";
       logStatus.className = "fm-status fm-status--wait";
