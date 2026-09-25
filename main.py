@@ -16,13 +16,22 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Field, Session, SQLModel, select
 
 from admin import setup_admin
-from models import Account, AccountPublic, Emission, create_db_and_tables, engine
+from models import (
+    Account,
+    AccountPublic,
+    Emission,
+    Redemption,
+    create_db_and_tables,
+    engine,
+)
 from schemas import (
     Coin,
     IssueFinishRequest,
     IssueFinishResponse,
     IssueStartRequest,
     IssueStartResponse,
+    SyncRequest,
+    SyncResponse,
     WalletCoinsRequest,
 )
 from utils import (
@@ -32,6 +41,7 @@ from utils import (
     RSA_PUBLIC_EXPONENT,
     VALUE_BYTES,
     compute_coin_id,
+    verify_signature,
 )
 
 with open("keys/keys.json") as keys_file:
@@ -211,3 +221,56 @@ def wallet_coins(request: WalletCoinsRequest, session: SessionDep) -> list[Coin]
         Coin(coin_value=emission.coin_value, coin=emission.coin.hex())
         for emission in emissions
     ]
+
+
+@app.post("/api/account/sync", response_model=SyncResponse)
+def sync_account(request: SyncRequest, session: SessionDep) -> SyncResponse:
+    """Bezahlte Münzen einlösen: prüfen, gutschreiben, als eingelöst vermerken."""
+    wallet_id = bytes.fromhex(request.wallet_id)
+    account = session.exec(
+        select(Account).where(Account.wallet_id == wallet_id)
+    ).first()
+    if account is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "unknown_wallet_id")
+
+    if not request.coins:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "no_coins")
+
+    coin_ids_in_request = {coin.coin_id for coin in request.coins}
+    if len(coin_ids_in_request) != len(request.coins):
+        raise HTTPException(status.HTTP_409_CONFLICT, "duplicate_coin_in_request")
+
+    for coin in request.coins:
+        if coin.coin_value not in SIGNING_KEYS:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "unknown_coin_value")
+
+        modulus, _ = SIGNING_KEYS[coin.coin_value]
+        if not verify_signature(
+            int(coin.coin_id, 16), int(coin.signature, 16), modulus
+        ):
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "invalid_coin")
+
+        already_redeemed = session.exec(
+            select(Redemption).where(Redemption.coin_id == bytes.fromhex(coin.coin_id))
+        ).first()
+        if already_redeemed is not None:
+            raise HTTPException(status.HTTP_409_CONFLICT, "coin_already_redeemed")
+
+    credited = sum(coin.coin_value for coin in request.coins)
+    account.balance += credited
+    session.add(account)
+    for coin in request.coins:
+        session.add(
+            Redemption(
+                coin_id=bytes.fromhex(coin.coin_id),
+                coin_value=coin.coin_value,
+                wallet_id=wallet_id,
+                account_id=account.account_id,
+            )
+        )
+    session.commit()
+    session.refresh(account)
+
+    return SyncResponse(
+        account_id=account.account_id, credited=credited, balance=account.balance
+    )
