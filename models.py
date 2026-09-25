@@ -1,6 +1,7 @@
 import secrets
 from datetime import UTC, datetime
 
+from sqlalchemy import inspect, text
 from sqlmodel import Field, SQLModel, create_engine
 
 
@@ -16,6 +17,9 @@ class Account(SQLModel, table=True):
         default_factory=lambda: secrets.token_bytes(8), unique=True, index=True
     )
     balance: int = Field(default=100, ge=0)
+    photo: str | None = Field(
+        default=None
+    )  # Selfie (data-URL), nur für den Steckbrief bei Doppelausgabe
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
@@ -79,8 +83,22 @@ sqlite_url = f"sqlite:///{sqlite_file_name}"
 engine = create_engine(sqlite_url, echo=True)
 
 
+# Spalten, die nach dem ersten Anlegen dazukamen. create_all legt nur fehlende TABELLEN an,
+# keine Spalten – bestehende database.db-Dateien bekommen sie hier nachgetragen.
+ADDED_COLUMNS = {"account": {"photo": "TEXT"}}
+
+
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
+    existing = inspect(engine)
+    with engine.begin() as connection:
+        for table, columns in ADDED_COLUMNS.items():
+            present = {column["name"] for column in existing.get_columns(table)}
+            for name, sql_type in columns.items():
+                if name not in present:
+                    connection.execute(
+                        text(f"ALTER TABLE {table} ADD COLUMN {name} {sql_type}")
+                    )
 
 
 if __name__ == "__main__":

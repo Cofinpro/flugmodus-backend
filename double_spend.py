@@ -121,6 +121,9 @@ def reveal(
     first_merchant = session.get(Account, first.account_id)
     return {
         "username": payer.username if payer else None,  # enttarnter Zahler
+        "photo": payer.photo
+        if payer
+        else None,  # Steckbrief-Foto, nur bei Doppelausgabe
         "merchant": merchant.username,
         "first_merchant": first_merchant.username if first_merchant else None,
         "coin_id": coin.coin_id,
