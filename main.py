@@ -9,7 +9,7 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Field, Session, SQLModel
+from sqlmodel import Field, Session, SQLModel, select
 
 from models import Account, AccountPublic, create_db_and_tables, engine
 from schemas import (
@@ -96,6 +96,12 @@ def create_account(account_in: AccountCreate, session: SessionDep) -> AccountPub
         )
     session.refresh(account)
     return AccountPublic.from_account(account)
+
+
+@app.get("/accounts", response_model=list[AccountPublic])
+def list_accounts(session: SessionDep) -> list[AccountPublic]:
+    accounts = session.exec(select(Account)).all()
+    return [AccountPublic.from_account(account) for account in accounts]
 
 
 @app.post("/api/issue/start", response_model=IssueStartResponse)
