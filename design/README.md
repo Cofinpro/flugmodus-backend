@@ -117,6 +117,7 @@ Alles live in `styleguide.html`. Die wichtigsten:
 | `fm-input` (`--invalid`) | Eingabe mit Mono-Label und Linie statt Kasten |
 | `fm-notice` (`--ok`, `--warn`, `--error`) | Hinweisbox |
 | `fm-rule` (`--perforated`) | Trennlinie |
+| `fm-segmented` | Umschalter mit zwei Optionen: Pille mit dunklem Schieber, der dem Knopf mit `aria-pressed="true"` folgt (reines CSS). Aktive Beschriftung in Amber. |
 | `fm-log` (`--wide`) | Live-Tabelle wie eine Abflugtafel auf Papier: Kopf mit Titel und Status, Spalten per `--fm-log-cols`. Zeilen `fm-log-row > fm-log-cells` mit `-time`, `-code` (`--new` Amber, `--pay` Grün, `--alert` Rot), `-who`, `-what`, `-amount` (`--in` / `--out`). `fm-log-row--fresh` klappt eine neue Zeile auf (alles darüber rutscht weich mit), `--leaving` klappt sie zu. Am Handy nur Code, Wer, Betrag – darum auch in der Kopfzeile `fm-log-time` / `fm-log-what` an die Zellen. |
 
 ### `sky.js`

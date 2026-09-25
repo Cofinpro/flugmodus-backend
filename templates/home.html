@@ -124,6 +124,11 @@
       .fm-log-row--bump .fm-log-cells,
       .fm-log-row--bump .fm-log-amount { animation: none; }
     }
+
+    /* QR-Umschalter: neuer Code klappt kurz auf */
+    .qr-mode:not([hidden]) { animation: qr-in 380ms cubic-bezier(.2, .8, .2, 1); }
+    @keyframes qr-in { from { opacity: 0; transform: scale(.94) rotateY(-12deg); } }
+    @media (prefers-reduced-motion: reduce) { .qr-mode:not([hidden]) { animation: none; } }
   </style>
 </head>
 <body class="fm-page">
@@ -160,9 +165,14 @@
           </section>
 
           <aside class="fm-ticket-stub">
-            <span class="fm-kicker">Scannen &amp; einsteigen</span>
-            <div class="fm-qr" role="img" aria-label="QR-Code zur Wallet">{{ qr_svg | safe }}</div>
-            <span class="fm-status">Boarding jetzt</span>
+            <span class="fm-kicker" id="qr-kicker">Scannen &amp; registrieren</span>
+            <div class="fm-qr qr-mode" data-mode="signup" role="img" aria-label="QR-Code: in der App registrieren">{{ signup_qr | safe }}</div>
+            <div class="fm-qr qr-mode" data-mode="signin" role="img" aria-label="QR-Code: in der App anmelden" hidden>{{ signin_qr | safe }}</div>
+            <div class="fm-segmented qr-switch" role="group" aria-label="QR-Code wählen">
+              <button type="button" data-mode="signup" aria-pressed="true">Registrieren</button>
+              <button type="button" data-mode="signin" aria-pressed="false">Anmelden</button>
+            </div>
+            <span class="fm-status" id="qr-status">Mit der Handy-Kamera</span>
           </aside>
         </article>
       </div>
@@ -183,6 +193,24 @@
   </main>
 
   <script>
+    // QR-Umschalter: Registrieren (Link auf die Signup-Seite der App) oder Anmelden (Backend-Adresse für den App-Scanner)
+    const QR_MODES = {
+      signup: { kicker: "Scannen & registrieren", status: "Mit der Handy-Kamera" },
+      signin: { kicker: "Scannen & anmelden", status: "Mit dem Scanner in der App" },
+    };
+    function setQrMode(mode) {
+      document.querySelectorAll(".qr-mode").forEach((qr) => (qr.hidden = qr.dataset.mode !== mode));
+      document.querySelectorAll(".qr-switch button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
+      document.getElementById("qr-kicker").textContent = QR_MODES[mode].kicker;
+      document.getElementById("qr-status").textContent = QR_MODES[mode].status;
+      try { localStorage.setItem("flugmodus.qrMode", mode); } catch {}
+    }
+    document.querySelectorAll(".qr-switch button").forEach((b) => b.addEventListener("click", () => setQrMode(b.dataset.mode)));
+    try {
+      const saved = localStorage.getItem("flugmodus.qrMode");
+      if (saved in QR_MODES) setQrMode(saved);
+    } catch {}
+
     // Neue Anmeldung: Flugzeug mit Regenbogen fliegt von rechts nach links
     const planeIcon = document.querySelector(".fm-logo svg").outerHTML.replace("<svg", '<svg class="plane-icon"');
     const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
