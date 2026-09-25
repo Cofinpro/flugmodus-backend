@@ -17,6 +17,11 @@ def xor_bytes(left: bytes, right: bytes) -> bytes:
     return bytes(x ^ y for x, y in zip(left, right))
 
 
+def verify_signature(coin_id: int, signature: int, modulus: int) -> bool:
+    """Prüft eine entblindete RSA-Signatur gegen den signierten coin_id."""
+    return pow(signature, RSA_PUBLIC_EXPONENT, modulus) == coin_id % modulus
+
+
 def compute_coin_id(
     identity: bytes,
     masks: list[bytes],

@@ -50,7 +50,14 @@ class Emission(SQLModel, table=True):
 
 
 class Redemption(SQLModel, table=True):
+    """Eine eingelöste Münze – verhindert, dass ein coin_id zweimal gutgeschrieben wird."""
+
     id: int | None = Field(default=None, primary_key=True)
+    coin_id: bytes = Field(unique=True, index=True)
+    coin_value: int
+    wallet_id: bytes  # einreichende Wallet
+    account_id: str  # gutgeschriebenes Konto
+    redeemed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 sqlite_file_name = "database.db"

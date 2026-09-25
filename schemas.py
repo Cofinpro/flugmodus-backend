@@ -42,3 +42,20 @@ class Coin(BaseModel):
 
 class WalletCoinsRequest(BaseModel):
     wallet_id: Hex
+
+
+class SpendCoin(BaseModel):
+    coin_value: int
+    coin_id: Hex  # hex, der signierte Wert (32 Byte / 64 Zeichen)
+    signature: Hex  # hex, entblindete RSA-Signatur (128 Byte / 256 Zeichen)
+
+
+class SyncRequest(BaseModel):
+    wallet_id: Hex  # Wallet, die die Coins beim Bezahlen bekommen hat
+    coins: list[SpendCoin]
+
+
+class SyncResponse(BaseModel):
+    account_id: str
+    credited: int  # Summe der gutgeschriebenen Coin-Werte
+    balance: int  # neuer Kontostand
