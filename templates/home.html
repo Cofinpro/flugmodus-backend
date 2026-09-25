@@ -273,49 +273,28 @@
       width: 180px;
       height: 180px;
       flex: none;
-      border-radius: 10px;
+      border-radius: 14px;
       overflow: hidden;
-      background: #6b6f76;
-      box-shadow: inset 0 0 0 3px var(--fm-ink);
+      background: var(--fm-ink);
+      box-shadow: 0 0 0 3px var(--fm-red), 0 10px 24px rgb(0 0 0 / 0.25);
     }
-    .mugshot__photo { width: 100%; height: 100%; object-fit: cover; filter: grayscale(0.7) contrast(1.05); }
+    .mugshot__photo { width: 100%; height: 100%; object-fit: cover; }
     .mugshot__photo--none { display: grid; place-items: center; color: #eee; font: 600 12px var(--fm-mono); }
-    /* Höhenskala hinter der Person */
-    .mugshot::before {
-      content: "";
+    /* BUSTED-Stempel oben auf dem Foto */
+    .mugshot__stamp {
       position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(to top, rgb(255 255 255 / 0.25) 0 1px, transparent 1px 18px);
-      pointer-events: none;
+      top: 14px;
+      left: 50%;
+      padding: 4px 12px 3px;
+      border: 3px solid var(--fm-red);
+      border-radius: 6px;
+      background: rgb(255 255 255 / 0.82);
+      color: var(--fm-red);
+      font: 800 24px/1 var(--fm-sans);
+      letter-spacing: 0.08em;
+      transform: translateX(-50%) rotate(-8deg);
+      box-shadow: 0 2px 6px rgb(0 0 0 / 0.3);
     }
-    /* Gefängnisgitter */
-    .mugshot__bars {
-      position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(90deg, transparent 0 26px, rgb(20 22 26 / 0.92) 26px 33px);
-      pointer-events: none;
-    }
-    .mugshot__bars::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(180deg, rgb(20 22 26 / 0.92) 0 7px, transparent 7px), linear-gradient(0deg, rgb(20 22 26 / 0.92) 0 7px, transparent 7px);
-    }
-    .mugshot__plate {
-      position: absolute;
-      left: 8px;
-      right: 8px;
-      bottom: 8px;
-      display: grid;
-      gap: 2px;
-      padding: 5px 8px;
-      border-radius: 4px;
-      background: rgb(243 238 228 / 0.94);
-      box-shadow: 0 1px 4px rgb(0 0 0 / 0.4);
-      text-align: center;
-    }
-    .mugshot__name { font: 700 12px/1.1 var(--fm-mono); letter-spacing: 0.08em; color: var(--fm-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .mugshot__crime { font: 700 9px var(--fm-mono); letter-spacing: 0.18em; color: var(--fm-red); }
 
     /* Bitmuster der zwei Challenges */
     .bits { display: grid; gap: 6px; margin-top: 12px; }
@@ -337,6 +316,24 @@
     .reveal__bin { font: 600 15px/1.4 var(--fm-mono); letter-spacing: 0.18em; }
     .reveal__bin--u { color: var(--fm-amber); }
     .reveal__xor .reveal__bin--u { padding-top: 6px; border-top: 1px solid rgb(243 238 228 / 0.3); }
+
+    /* Doppelausgabe: u-Erklärung, Metadaten, Münz-Raster */
+    .reveal__u-intro { background: color-mix(in srgb, var(--fm-amber) 10%, transparent); border-radius: 12px; padding: 16px 18px 14px; border-top: 0; }
+    .reveal__u-hidden { display: flex; align-items: center; gap: 12px; margin: 10px 0 0; }
+    .reveal__mono--hidden { color: var(--fm-ink-soft); letter-spacing: 0.12em; }
+    .reveal__meta { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; margin: 6px 0 0; font-size: 12px; }
+    .reveal__meta dt { color: var(--fm-ink-soft); font: 600 10px var(--fm-mono); letter-spacing: 0.1em; text-transform: uppercase; align-self: center; }
+    .reveal__meta dd { margin: 0; overflow-wrap: anywhere; }
+    .coin-grid { display: grid; grid-template-columns: 36px 1fr 1fr; gap: 3px 10px; margin-top: 10px; }
+    .coin-grid__head { font: 600 10px var(--fm-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--fm-ink-soft); }
+    .coin-grid__sides { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; font: 600 9.5px var(--fm-mono); color: var(--fm-ink-soft); text-align: center; }
+    .coin-grid__j { display: grid; place-items: center; font: 700 12px var(--fm-mono); color: var(--fm-ink-soft); }
+    .coin-grid__j--hit { color: var(--fm-red); }
+    .side { display: grid; place-items: center; height: 24px; border-radius: 5px; background: var(--fm-paper-edge); font: 500 11px var(--fm-mono); color: var(--fm-ink-soft); opacity: 0.7; }
+    .side--open { background: #fff; color: var(--fm-ink); opacity: 1; box-shadow: inset 0 0 0 1px var(--fm-paper-edge); }
+    .coin-grid__sides--hit .side { opacity: 1; }
+    .coin-grid__sides--hit .side--open { background: color-mix(in srgb, var(--fm-red) 16%, #fff); box-shadow: inset 0 0 0 1.5px var(--fm-red); }
+    .reveal__xor { grid-template-columns: max-content 1fr max-content; }
   </style>
 </head>
 <body class="fm-page">
@@ -631,7 +628,7 @@
       }
       if (chips.length > MAX_CHIPS) {
         const more = document.createElement("span");
-        more.className = "coin-chip coin-chip--more";
+        more.className = `coin-chip coin-chip--more${chips[0]?.blind ? " coin-chip--blind" : ""}`; // wie die Chips davor
         more.textContent = `+${chips.length - MAX_CHIPS}`;
         box.append(more);
       }
@@ -801,11 +798,11 @@
     function openReveal(e) {
       const body = reveal.querySelector(".reveal__body");
       body.replaceChildren();
-      reveal.querySelector(".reveal__title").textContent = `${e.username ?? "Unbekannt"} — auf frischer Tat ertappt`;
+      reveal.querySelector(".reveal__title").textContent = `${e.username ?? "Unbekannt"} hat eine Münze zweimal ausgegeben`;
       const diff = e.pairs.filter((p) => p.bit_first !== p.bit_second);
       const toBin = (hex) => parseInt(hex.slice(0, 2), 16).toString(2).padStart(8, "0");
 
-      // 1 · Steckbrief: Foto hinter Gittern
+      // Foto mit BUSTED-Stempel
       const s1 = el("section", "reveal__step reveal__step--mug");
       const mug = el("div", "mugshot");
       if (e.photo) {
@@ -814,10 +811,7 @@
       } else {
         mug.append(el("div", "mugshot__photo mugshot__photo--none", "kein Foto"));
       }
-      mug.append(el("div", "mugshot__bars"));
-      const plate = el("div", "mugshot__plate");
-      plate.append(el("span", "mugshot__name", e.username ?? "UNBEKANNT"), el("span", "mugshot__crime", "DOPPELAUSGABE"));
-      mug.append(plate);
+      mug.append(el("div", "mugshot__stamp", "BUSTED"));
       s1.append(mug);
       const facts = el("div", "reveal__facts");
       facts.append(el("p", "reveal__text", `Dieselbe Münze bei zwei Zahlungen ausgegeben: an ${e.first_merchant ?? "?"} und an ${e.merchant ?? "?"}.`));
@@ -828,57 +822,87 @@
       facts.append(el("p", "reveal__hint", "Eine Münze zeigen wir hier als Beweis – bei den anderen läuft es genauso."));
       s1.append(facts);
 
-      // 2 · Die zwei Challenges als Bitmuster, Kollisionen markiert
-      const s2 = el("section", "reveal__step");
-      s2.append(el("h4", "", "1 · Zwei Zahlungen, zwei Bitmuster"));
-      s2.append(el("p", "reveal__text", "Jede Zahlung würfelt aus Münze, Empfänger und nonce 12 Bits. Jedes Bit sagt, welche Hälfte eines Paars offengelegt wird: 0 = maskⱼ, 1 = maskⱼ ⊕ u."));
-      const bitsRow = (label, key) => {
-        const line = el("div", "bitline");
-        line.append(el("span", "bitline__label", label));
-        const track = el("div", "bitline__bits");
-        for (const p of e.pairs) {
-          const collision = p.bit_first !== p.bit_second;
-          track.append(el("span", `bit${collision ? " bit--collision" : ""}`, String(p[key])));
-        }
-        line.append(track);
-        return line;
-      };
-      const bits = el("div", "bits");
-      bits.append(bitsRow("Zahlung 1", "bit_first"), bitsRow("Zahlung 2", "bit_second"));
-      const marks = el("div", "bitline");
-      marks.append(el("span", "bitline__label", ""));
-      const marktrack = el("div", "bitline__bits");
-      for (const p of e.pairs) marktrack.append(el("span", "bit bit--mark", p.bit_first !== p.bit_second ? "↑" : ""));
-      marks.append(marktrack);
-      bits.append(marks);
-      s2.append(bits);
-      s2.append(el("p", "reveal__text", `An ${diff.length} Stellen sind die Bits verschieden (↑). Nur dort legt der Zahler beide Hälften offen – und genau das ist sein Fehler.`));
+      // 2 · Was ist u?
+      const s2 = el("section", "reveal__step reveal__u-intro");
+      s2.append(el("h4", "", "Was ist u?"));
+      s2.append(el("p", "reveal__text", "u ist die geheime Identität des Zahlers: 12 Byte, die nur die Bank seinem Konto zuordnen kann. u steckt in jeder seiner Münzen, aber nie offen. In jedem der 12 Paare liegt links eine Zufallsmaske maskⱼ und rechts maskⱼ ⊕ u. Jede Seite allein sieht aus wie Rauschen."));
+      const hiddenU = el("p", "reveal__u-hidden");
+      hiddenU.append(el("span", "reveal__label", "u in der Münze"), el("code", "reveal__mono reveal__mono--hidden", "?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??"));
+      s2.append(hiddenU);
 
-      // 3 · XOR einer Kollision in binär → u
+      // 3 · Wo und womit ausgegeben
+      const s3 = el("section", "reveal__step");
+      s3.append(el("h4", "", "1 · Zweimal ausgegeben – wo und womit"));
+      const fmtTime = (iso) => (iso ? new Date(iso).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "–");
+      const spends = el("div", "reveal__pays");
+      for (const [label, who, part] of [["Zahlung 1", e.first_merchant, e.first], ["Zahlung 2", e.merchant, e.second]]) {
+        const card = el("div", "reveal__pay");
+        card.append(el("span", "reveal__label", label), el("strong", "", who ?? "?"));
+        const meta = el("dl", "reveal__meta");
+        for (const [k, v] of [["Zeit", fmtTime(part.time)], ["Empfänger-ID", part.wallet_id], ["nonce", part.nonce.slice(0, 16) + "…"]]) {
+          meta.append(el("dt", "", k), el("dd", "reveal__mono", v));
+        }
+        card.append(meta);
+        spends.append(card);
+      }
+      s3.append(spends);
+      s3.append(el("p", "reveal__hint", "Empfänger-ID und nonce sind bei jeder Zahlung anders – deshalb würfelt jede Zahlung andere Seiten zum Öffnen."));
+
+      // 4 · Die Münze: pro Paar eine Seite offen
+      const s4 = el("section", "reveal__step");
+      s4.append(el("h4", "", "2 · Die Münze – bei jeder Zahlung pro Paar eine Seite offen"));
+      const coinLine = el("p", "reveal__text", "Münz-ID ");
+      coinLine.append(el("code", "coin-chip", hexGroups(e.coin_id.slice(0, 12)) + "…"));
+      s4.append(coinLine);
+      const grid = el("div", "coin-grid");
+      grid.append(el("span", "coin-grid__head", "Paar"), el("span", "coin-grid__head", "Zahlung 1"), el("span", "coin-grid__head", "Zahlung 2"));
+      grid.append(el("span", ""));
+      for (let i = 0; i < 2; i++) {
+        const sides = el("span", "coin-grid__sides");
+        sides.append(el("span", "", "maskⱼ"), el("span", "", "maskⱼ ⊕ u"));
+        grid.append(sides);
+      }
+      const shortHex = (hex) => hexGroups(hex.slice(0, 6)) + "…";
+      for (const p of e.pairs) {
+        const hit = p.bit_first !== p.bit_second;
+        grid.append(el("span", `coin-grid__j${hit ? " coin-grid__j--hit" : ""}`, String(p.j + 1)));
+        for (const [bit, value] of [[p.bit_first, p.revealed_first], [p.bit_second, p.revealed_second]]) {
+          const cell = el("span", `coin-grid__sides${hit ? " coin-grid__sides--hit" : ""}`);
+          for (const side of [0, 1]) {
+            const open = bit === side;
+            cell.append(el("span", `side${open ? " side--open" : ""}`, open ? shortHex(value) : "🔒"));
+          }
+          grid.append(cell);
+        }
+      }
+      s4.append(grid);
+      s4.append(el("p", "reveal__text", `In ${diff.length} Paaren hat die zweite Zahlung die andere Seite geöffnet (hervorgehoben). Zusammen liegen dort beide Seiten offen – maskⱼ und maskⱼ ⊕ u.`));
+
+      // 5 · XOR bringt u heraus
       const p0 = diff[0];
       const mask = p0.bit_first === 0 ? p0.revealed_first : p0.revealed_second;
       const masked = p0.bit_first === 0 ? p0.revealed_second : p0.revealed_first;
-      const s3 = el("section", "reveal__step");
-      s3.append(el("h4", "", `2 · Kollision an Stelle ${p0.j + 1}: beide Hälften XOR-verknüpft`));
-      s3.append(el("p", "reveal__text", "Eine Zahlung zeigt maskⱼ, die andere maskⱼ ⊕ u. XOR hebt die Maske auf und legt u frei (erstes Byte als Beispiel):"));
+      const binOf = (hex) => parseInt(hex.slice(0, 2), 16).toString(2).padStart(8, "0");
+      const s5 = el("section", "reveal__step");
+      s5.append(el("h4", "", `3 · Paar ${p0.j + 1}: beide Seiten XOR-verknüpft – die Maske fällt weg`));
       const xor = el("div", "reveal__xor");
       xor.append(
-        el("span", "reveal__label", "maskⱼ"), el("code", "reveal__bin", toBin(mask)),
-        el("span", "reveal__label", "⊕  maskⱼ ⊕ u"), el("code", "reveal__bin", toBin(masked)),
-        el("span", "reveal__label reveal__label--sum", "=  u"), el("code", "reveal__bin reveal__bin--u", toBin(p0.xor)),
+        el("span", "reveal__label", "maskⱼ"), el("code", "reveal__mono", hexGroups(mask)), el("code", "reveal__bin", binOf(mask)),
+        el("span", "reveal__label", "⊕ maskⱼ ⊕ u"), el("code", "reveal__mono", hexGroups(masked)), el("code", "reveal__bin", binOf(masked)),
+        el("span", "reveal__label reveal__label--sum", "= u"), el("code", "reveal__mono reveal__mono--u", hexGroups(p0.xor)), el("code", "reveal__bin reveal__bin--u", binOf(p0.xor)),
       );
-      s3.append(xor);
-      s3.append(el("p", "reveal__hint", diff.length > 1 ? `Alle ${diff.length} Kollisionen ergeben dasselbe u.` : "Diese eine Kollision genügt."));
+      s5.append(xor);
+      s5.append(el("p", "reveal__hint", `Rechts das erste Byte in binär: wo maskⱼ und maskⱼ ⊕ u sich unterscheiden, steht in u eine 1. ${diff.length > 1 ? `Alle ${diff.length} offenen Paare ergeben dasselbe u.` : ""}`));
 
-      // 4 · u → Konto
-      const s4 = el("section", "reveal__step");
-      s4.append(el("h4", "", "3 · u ist die Identität – und sie gehört einem Konto"));
-      const who = el("p", "reveal__verdict");
-      who.append(el("code", "reveal__mono reveal__mono--u", hexGroups(e.u.slice(0, 12)) + "…"), el("span", "", "→"), el("strong", "", e.username ?? "unbekanntes Konto"));
-      s4.append(who);
-      s4.append(el("p", "reveal__hint", "Bei nur einer Zahlung bleibt pro Paar eine Hälfte verborgen – u kommt nie heraus. Erst die zweite Ausgabe überführt den Zahler."));
+      // 6 · u → Konto
+      const s6 = el("section", "reveal__step");
+      s6.append(el("h4", "", "4 · u ist wieder sichtbar – und gehört einem Konto"));
+      const verdict = el("p", "reveal__verdict");
+      verdict.append(el("code", "reveal__mono reveal__mono--u", hexGroups(e.u)), el("span", "", "→"), el("strong", "", e.username ?? "unbekanntes Konto"));
+      s6.append(verdict);
+      s6.append(el("p", "reveal__hint", "Mit nur einer Zahlung bleibt pro Paar eine Seite verschlossen, und u kommt nie heraus. Erst die zweite Ausgabe derselben Münze legt beide Seiten offen."));
 
-      body.append(s1, s2, s3, s4);
+      body.append(s1, s2, s3, s4, s5, s6);
       reveal.showModal();
     }
     reveal.addEventListener("click", (event) => {
