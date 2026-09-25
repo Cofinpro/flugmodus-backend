@@ -16,6 +16,12 @@ Direct commits to `main` are blocked.
 - Run on all files: `uv run pre-commit run --all-files`
 - Update hook versions: `uv run pre-commit autoupdate`
 
+## Model erzeugen
+
+```sh
+uv run gen_model.py
+```
+
 ## Keys erzeugen
 
 ```sh
