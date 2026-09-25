@@ -1,5 +1,6 @@
 """FastAPI-Endpoints der Bank.  Start: uvicorn api:app --reload"""
 
+import asyncio
 import json
 import secrets
 from collections.abc import Generator
@@ -9,13 +10,14 @@ from typing import Annotated
 import segno
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Field, Session, SQLModel, select
 
 from admin import setup_admin
+from events import bus
 from models import (
     Account,
     AccountPublic,
@@ -59,6 +61,7 @@ templates = Jinja2Templates(directory="templates")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+    bus.bind_loop(asyncio.get_running_loop())
     yield
 
 
@@ -128,6 +131,7 @@ def create_account(account_in: AccountCreate, session: SessionDep) -> AccountCre
             status.HTTP_409_CONFLICT, "Benutzername ist bereits vergeben"
         )
     session.refresh(account)
+    bus.publish("account_created", username=account.username)
     modulus, _ = SIGNING_KEYS[COIN_VALUE]  # nur der öffentliche Teil geht raus
     return AccountCreated(
         **AccountPublic.from_account(account).model_dump(),
@@ -147,6 +151,16 @@ def arrivals(session: SessionDep) -> list[str]:
     """Neueste Benutzernamen für die Startseite – bewusst ohne account_id."""
     newest = select(Account.username).order_by(Account.created_at.desc()).limit(20)
     return list(session.exec(newest))
+
+
+@app.get("/api/events")
+async def events() -> StreamingResponse:
+    """Transaktions-Ticker für die Startseite (Server-Sent Events)."""
+    return StreamingResponse(
+        bus.stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.post("/api/issue/start", response_model=IssueStartResponse)
@@ -190,7 +204,13 @@ def issue_finish(
             not 1 < blinding_factor < modulus
             or reblinded != blinded_candidates[opening.candidate_index]
         ):
+            bus.publish("cheating_detected", username=account.username)
             raise HTTPException(400, "cheating_detected")
+
+    account.balance -= pending["coin_value"]
+    db_session.add(account)
+    db_session.commit()
+    bus.publish("coin_issued", username=account.username, amount=pending["coin_value"])
 
     kept_blinded = blinded_candidates[pending["kept_candidate_index"]]
     blind_signature = pow(kept_blinded, private_exponent, modulus)

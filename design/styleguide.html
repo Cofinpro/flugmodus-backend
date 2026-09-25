@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flugmodus Styleguide</title>
+  <link rel="stylesheet" href="flugmodus.css">
+  <script src="sky.js" defer></script>
+  <style>
+    /* nur fürs Layout dieses Styleguides */
+    .sg { position: relative; display: grid; gap: 40px; justify-items: center; padding: 56px 16px 80px; }
+    .sg-intro { width: min(920px, 100%); color: #fff; }
+    .sg-intro h1 { margin: 12px 0 8px; font-size: clamp(40px, 7vw, 64px); letter-spacing: -0.04em; line-height: 1; }
+    .sg-intro h1 em { font-family: var(--fm-serif); font-weight: 400; font-size: 1.1em; }
+    .sg-intro p { margin: 0; max-width: 560px; color: rgb(255 255 255 / .7); font-size: 17px; line-height: 1.5; }
+    .sg-intro .fm-kicker { color: var(--fm-amber); }
+    .sg-card { width: min(920px, 100%); }
+    .sg-card h2 { margin: 0 0 20px; font-size: 22px; letter-spacing: -0.02em; }
+    .sg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; }
+    .sg-swatch { display: grid; gap: 6px; font-size: 14px; }
+    .sg-swatch i { display: block; height: 64px; border-radius: 12px; box-shadow: inset 0 0 0 1.5px rgb(0 0 0 / .08); }
+    .sg-swatch code { font-family: var(--fm-mono); font-size: 12px; color: var(--fm-ink-soft); }
+    .sg-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .sg-type > * + * { margin-top: 18px; }
+    /* großer Abstand, sonst fallen die Ticket-Schatten auf den Nachbarn */
+    .sg-screens { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 390px)); gap: 48px 110px; justify-content: center; width: min(1280px, 100%); }
+    .sg-screens > div { display: grid; gap: 14px; align-content: start; }
+    .sg-screens h3 { margin: 0; color: rgb(255 255 255 / .75); font: 600 11px var(--fm-mono); letter-spacing: .2em; text-transform: uppercase; }
+    .sg-screens .fm-ticket { width: 100%; }
+  </style>
+</head>
+<body class="fm-page">
+  <main class="sg">
+
+    <header class="sg-intro">
+      <span class="fm-kicker">Design Language</span>
+      <h1>Flugmodus — <em>Papier unter Sternen.</em></h1>
+      <p>Jeder Screen ist ein Reisedokument auf Papier über einem Nachthimmel. Regeln und Details stehen in design/README.md.</p>
+    </header>
+
+    <section class="fm-card sg-card">
+      <h2>Farben</h2>
+      <div class="sg-grid">
+        <div class="sg-swatch"><i style="background: linear-gradient(var(--fm-sky-top), var(--fm-sky))"></i>Himmel<code>--fm-sky-top → --fm-sky</code></div>
+        <div class="sg-swatch"><i style="background: var(--fm-paper)"></i>Papier<code>--fm-paper</code></div>
+        <div class="sg-swatch"><i style="background: var(--fm-ink)"></i>Tinte<code>--fm-ink</code></div>
+        <div class="sg-swatch"><i style="background: var(--fm-ink-soft)"></i>Tinte weich<code>--fm-ink-soft</code></div>
+        <div class="sg-swatch"><i style="background: var(--fm-amber)"></i>Amber<code>--fm-amber</code></div>
+        <div class="sg-swatch"><i style="background: var(--fm-amber-deep)"></i>Amber tief<code>--fm-amber-deep</code></div>
+        <div class="sg-swatch"><i style="background: var(--fm-green)"></i>Status ok<code>--fm-green</code></div>
+        <div class="sg-swatch"><i style="background: var(--fm-red)"></i>Fehler<code>--fm-red</code></div>
+      </div>
+    </section>
+
+    <section class="fm-card sg-card sg-type">
+      <h2>Schrift</h2>
+      <span class="fm-amount">2<small>€</small></span>
+      <p class="fm-title">Titel in Space Grotesk</p>
+      <p style="margin: 0; font-size: 17px">Werte und Fließtext in Space Grotesk 500 – ruhig und gut lesbar.</p>
+      <p class="fm-label" style="margin: 18px 0 0">Label in JetBrains Mono · Versalien</p>
+      <p class="fm-tagline" style="margin-top: 18px">Ein Halbsatz Gefühl — <em>auch ohne Netz.</em></p>
+    </section>
+
+    <section class="fm-card sg-card">
+      <h2>Bausteine</h2>
+      <div class="sg-grid">
+        <div>
+          <p class="fm-label">Buttons</p>
+          <div class="fm-actions">
+            <button class="fm-btn fm-btn--accent">Bezahlen</button>
+            <button class="fm-btn">Münze abheben</button>
+            <button class="fm-btn fm-btn--ghost">Abbrechen</button>
+            <button class="fm-btn" disabled>Deaktiviert</button>
+          </div>
+        </div>
+        <div style="display: grid; gap: 22px; align-content: start">
+          <label class="fm-input"><span>Betrag</span><input inputmode="numeric" placeholder="0 €" value="2 €"></label>
+          <label class="fm-input fm-input--invalid"><span>Betrag</span><input value="3 €"><small>Höchstens 2 Münzen pro Zahlung.</small></label>
+        </div>
+        <div style="display: grid; gap: 10px; align-content: start">
+          <p class="fm-label" style="margin: 0 0 4px">Hinweise</p>
+          <div class="fm-notice fm-notice--ok">Gelandet. 2 € sind angekommen.</div>
+          <div class="fm-notice fm-notice--warn">Kein Netz – die Zahlung wird später eingereicht.</div>
+          <div class="fm-notice fm-notice--error">Diese Münze wurde schon ausgegeben.</div>
+        </div>
+        <div style="display: grid; gap: 14px; align-content: start">
+          <p class="fm-label" style="margin: 0">Status &amp; Tags</p>
+          <span class="fm-status">Boarding jetzt</span>
+          <span class="fm-status fm-status--wait">Wartet auf Scan</span>
+          <span class="fm-status fm-status--error">Abgebrochen</span>
+          <div class="sg-row"><span class="fm-tag">Boarding Pass</span><span class="fm-tag">Zahlung</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="fm-card sg-card fm-skin">
+      <h4>Bestehende App · nur class="fm-skin", sonst normales HTML</h4>
+      <h2>Wallet</h2>
+      <p>Guthaben: <strong>7 €</strong> — <em>auch ohne Netz.</em></p>
+      <form onsubmit="return false" style="display: grid; gap: 18px; margin: 24px 0">
+        <div><label for="sg-to">Empfänger</label><input id="sg-to" value="Kiosk Dojo"></div>
+        <div><label for="sg-amount">Betrag</label><select id="sg-amount"><option>1 €</option><option selected>2 €</option></select></div>
+        <label style="display: flex; gap: 10px; align-items: center"><input type="checkbox" checked> Beleg speichern</label>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap">
+          <button type="submit">Bezahlen</button>
+          <button type="button">Münze abheben</button>
+        </div>
+      </form>
+      <table>
+        <thead><tr><th>Datum</th><th>Was</th><th>Betrag</th></tr></thead>
+        <tbody>
+          <tr><td>25.09.</td><td>Abgehoben</td><td>+1 €</td></tr>
+          <tr><td>25.09.</td><td>Kiosk Dojo</td><td>−2 €</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="sg-screens">
+      <div>
+        <h3>1 · Zahlung anfordern (Empfänger)</h3>
+        <article class="fm-ticket">
+          <section class="fm-ticket-main">
+            <div class="fm-ticket-head">
+              <div class="fm-brand"><span class="fm-logo"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></span>Kiosk Dojo</div>
+              <span class="fm-tag">Zahlung</span>
+            </div>
+            <div style="margin: 26px 0 24px"><span class="fm-amount">2<small>€</small></span></div>
+            <dl class="fm-fields fm-fields--2">
+              <div class="fm-field"><dt>An</dt><dd>Kiosk Dojo</dd></div>
+              <div class="fm-field"><dt>Netz</dt><dd class="fm-hot">Aus</dd></div>
+            </dl>
+          </section>
+          <aside class="fm-ticket-stub">
+            <span class="fm-kicker">Scannen &amp; bezahlen</span>
+            <div class="fm-qr" role="img" aria-label="QR-Code der Zahlungsanforderung"><svg viewBox="0 0 168 168" class="segno"><path transform="scale(8)" class="qrline" stroke="#121419" d="M0 0.5h7m2 0h4m1 0h7m-21 1h1m5 0h1m3 0h1m1 0h1m1 0h1m5 0h1m-21 1h1m1 0h3m1 0h1m1 0h1m2 0h2m1 0h1m1 0h3m1 0h1m-21 1h1m1 0h3m1 0h1m1 0h2m4 0h1m1 0h3m1 0h1m-21 1h1m1 0h3m1 0h1m1 0h1m3 0h1m1 0h1m1 0h3m1 0h1m-21 1h1m5 0h1m1 0h1m3 0h1m1 0h1m5 0h1m-21 1h7m1 0h1m1 0h1m1 0h1m1 0h7m-13 1h4m-12 1h1m1 0h5m2 0h3m2 0h5m-19 1h1m2 0h3m1 0h1m1 0h1m3 0h1m2 0h2m2 0h1m-21 1h1m2 0h2m1 0h2m2 0h4m4 0h2m-20 1h1m1 0h3m3 0h1m1 0h4m1 0h1m1 0h2m1 0h1m-21 1h1m2 0h1m2 0h1m1 0h4m1 0h2m2 0h1m1 0h1m-12 1h1m1 0h1m4 0h4m1 0h1m-21 1h7m4 0h4m2 0h3m-20 1h1m5 0h1m1 0h5m3 0h3m1 0h1m-21 1h1m1 0h3m1 0h1m1 0h1m2 0h2m1 0h1m1 0h1m2 0h2m-21 1h1m1 0h3m1 0h1m1 0h2m3 0h6m-19 1h1m1 0h3m1 0h1m1 0h1m1 0h4m3 0h1m-18 1h1m5 0h1m3 0h1m1 0h2m3 0h2m-19 1h7m1 0h2m1 0h2m1 0h1m1 0h1m2 0h1"/></svg></div>
+            <span class="fm-status fm-status--wait">Wartet auf Scan</span>
+          </aside>
+        </article>
+      </div>
+
+      <div>
+        <h3>2 · Bezahlen (Zahler)</h3>
+        <article class="fm-ticket">
+          <section class="fm-ticket-main">
+            <div class="fm-ticket-head">
+              <div class="fm-brand"><span class="fm-logo"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></span>Offline Bank Inc.</div>
+              <span class="fm-tag">Zahlung</span>
+            </div>
+            <div class="fm-route">
+              <div class="fm-port"><span class="fm-port-code">DU</span><span class="fm-port-label">Wallet</span></div>
+              <div class="fm-route-path" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></div>
+              <div class="fm-port fm-port--to"><span class="fm-port-code">KIO</span><span class="fm-port-label">Kiosk Dojo</span></div>
+            </div>
+            <dl class="fm-fields">
+              <div class="fm-field"><dt>Betrag</dt><dd class="fm-hot">2 €</dd></div>
+              <div class="fm-field"><dt>Münzen</dt><dd>2 × 1 €</dd></div>
+              <div class="fm-field"><dt>Übrig</dt><dd>7 €</dd></div>
+            </dl>
+            <div class="fm-actions">
+              <button class="fm-btn fm-btn--accent fm-btn--block">Bezahlen</button>
+              <button class="fm-btn fm-btn--ghost fm-btn--block">Abbrechen</button>
+            </div>
+          </section>
+        </article>
+      </div>
+
+      <div>
+        <h3>3 · Gelandet (beide)</h3>
+        <article class="fm-ticket">
+          <section class="fm-ticket-main">
+            <div class="fm-ticket-head">
+              <div class="fm-brand"><span class="fm-logo"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></span>Offline Bank Inc.</div>
+              <span class="fm-tag">Beleg</span>
+            </div>
+            <p class="fm-title" style="margin: 26px 0 8px">Gelandet. <em>2 € sind angekommen.</em></p>
+            <p class="fm-muted" style="margin: 0 0 24px">Die Bank prüft die Münzen, sobald jemand wieder Netz hat.</p>
+            <dl class="fm-fields">
+              <div class="fm-field"><dt>Von</dt><dd>Anonym</dd></div>
+              <div class="fm-field"><dt>Betrag</dt><dd>2 €</dd></div>
+              <div class="fm-field"><dt>Status</dt><dd class="fm-hot">Offline</dd></div>
+            </dl>
+            <div class="fm-actions"><button class="fm-btn fm-btn--block" id="sparkle-demo">Fertig</button></div>
+          </section>
+        </article>
+      </div>
+    </section>
+  </main>
+  <script>
+    // Demo für einen Wow-Moment: Funkeln rund um den Beleg
+    document.getElementById("sparkle-demo").addEventListener("click", (event) => {
+      const ticket = event.target.closest(".fm-ticket");
+      for (let i = 0; i < 24; i++) setTimeout(() => FlugmodusSky.sparkleAround(ticket, 160), i * 35);
+    });
+  </script>
+</body>
+</html>
