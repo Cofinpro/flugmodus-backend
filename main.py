@@ -16,12 +16,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Field, Session, SQLModel, select
 
 from admin import setup_admin
-from models import Account, AccountPublic, create_db_and_tables, engine
+from models import Account, AccountPublic, Emission, create_db_and_tables, engine
 from schemas import (
+    Coin,
     IssueFinishRequest,
     IssueFinishResponse,
     IssueStartRequest,
     IssueStartResponse,
+    WalletCoinsRequest,
 )
 from utils import (
     COIN_VALUE,
@@ -180,10 +182,32 @@ def issue_finish(
         ):
             raise HTTPException(400, "cheating_detected")
 
-    account.balance -= pending["coin_value"]
-    db_session.add(account)
-    db_session.commit()
-
     kept_blinded = blinded_candidates[pending["kept_candidate_index"]]
     blind_signature = pow(kept_blinded, private_exponent, modulus)
-    return IssueFinishResponse(blind_signature=format(blind_signature, "0256x"))
+    blind_signature_hex = format(blind_signature, "0256x")
+
+    account.balance -= pending["coin_value"]
+    db_session.add(account)
+    db_session.add(
+        Emission(
+            wallet_id=account.wallet_id,
+            coin_value=pending["coin_value"],
+            coin=bytes.fromhex(blind_signature_hex),
+        )
+    )
+    db_session.commit()
+
+    return IssueFinishResponse(blind_signature=blind_signature_hex)
+
+
+@app.post("/api/wallet/coins", response_model=list[Coin])
+def wallet_coins(request: WalletCoinsRequest, session: SessionDep) -> list[Coin]:
+    """Alle bisher an eine Wallet ausgegebenen Münzen (z.B. zur Wiederherstellung)."""
+    wallet_id = bytes.fromhex(request.wallet_id)
+    emissions = session.exec(
+        select(Emission).where(Emission.wallet_id == wallet_id)
+    ).all()
+    return [
+        Coin(coin_value=emission.coin_value, coin=emission.coin.hex())
+        for emission in emissions
+    ]
