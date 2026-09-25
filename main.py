@@ -304,7 +304,7 @@ def sync_account(request: SyncRequest, session: SessionDep) -> SyncResponse:
         )
     session.commit()
     session.refresh(account)
-    bus.publish("account_synced", username=account.username, credited=credited)
+    bus.publish("account_synced", username=account.username, credited=credited, coins=coin_ids_in_request, to=wallet_id)
 
     return SyncResponse(
         account_id=account.account_id, credited=credited, balance=account.balance
