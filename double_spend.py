@@ -7,6 +7,7 @@ ausgegeben, unterscheiden sich die Bits in einigen Paaren. Dort liegen beide Hä
 mask_j ⊕ (mask_j ⊕ u) = u.
 """
 
+import hashlib
 import json
 from datetime import UTC, datetime
 
@@ -78,6 +79,11 @@ def store_transcript(
     )
 
 
+def _challenge_prefix(coin_id: bytes, wallet_id: bytes, nonce: bytes) -> str:
+    """Die ersten 3 Hex-Zeichen (= 12 Bit) des Challenge-Hashes, nur zur Anzeige."""
+    return hashlib.sha256(coin_id + wallet_id + nonce).hexdigest()[:3]
+
+
 def reveal(
     session: Session, coin: SpendCoin, wallet_id: bytes, merchant: Account
 ) -> dict | None:
@@ -133,11 +139,14 @@ def reveal(
         "first": {
             "wallet_id": first.wallet_id.hex(),
             "nonce": first.nonce.hex(),
+            # Anfang von SHA-256(coin_id ‖ empfaenger_id ‖ nonce) – daraus stammen die 12 Challenge-Bits
+            "challenge": _challenge_prefix(coin_id, first.wallet_id, first.nonce),
             "time": first.created_at.isoformat(),  # eingereicht beim ersten Händler
         },
         "second": {
             "wallet_id": wallet_id.hex(),
             "nonce": coin.nonce,
+            "challenge": _challenge_prefix(coin_id, wallet_id, second_nonce),
             "time": datetime.now(UTC).isoformat(),
         },
         "pairs": pairs,
