@@ -19,6 +19,26 @@ class Account(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
+class AccountPublic(SQLModel):
+    account_id: str
+    username: str
+    u: str  # hex-kodiert
+    wallet_id: str  # hex-kodiert
+    balance: int
+    created_at: datetime
+
+    @classmethod
+    def from_account(cls, account: Account) -> AccountPublic:
+        return cls(
+            account_id=account.account_id,
+            username=account.username,
+            u=account.u.hex(),
+            wallet_id=account.wallet_id.hex(),
+            balance=account.balance,
+            created_at=account.created_at,
+        )
+
+
 class Emission(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
 

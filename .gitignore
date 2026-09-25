@@ -10,3 +10,5 @@ wheels/
 .venv
 
 database.db
+
+keys.json
