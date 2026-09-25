@@ -8,6 +8,7 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Field, Session, SQLModel
 
 from models import Account, AccountPublic, create_db_and_tables, engine
@@ -86,7 +87,13 @@ async def root():
 def create_account(account_in: AccountCreate, session: SessionDep) -> AccountPublic:
     account = Account(username=account_in.username)
     session.add(account)
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Benutzername ist bereits vergeben"
+        )
     session.refresh(account)
     return AccountPublic.from_account(account)
 
