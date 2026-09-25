@@ -129,6 +129,23 @@
     .qr-mode:not([hidden]) { animation: qr-in 380ms cubic-bezier(.2, .8, .2, 1); }
     @keyframes qr-in { from { opacity: 0; transform: scale(.94) rotateY(-12deg); } }
     @media (prefers-reduced-motion: reduce) { .qr-mode:not([hidden]) { animation: none; } }
+
+    /* Leeren-Knopf im Kopf des Live-Logs */
+    .home-log-tools { display: flex; align-items: center; gap: 14px; }
+    .home-log-clear {
+      padding: 6px 12px;
+      border: var(--fm-line) solid var(--fm-paper-edge);
+      border-radius: 999px;
+      background: none;
+      color: var(--fm-ink-soft);
+      font: 600 10px/1 var(--fm-mono);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+    }
+    .home-log-clear:hover { border-color: var(--fm-ink); background: var(--fm-ink); color: var(--fm-amber); }
+    .home-log-clear:focus-visible { outline: 3px solid var(--fm-amber); outline-offset: 2px; }
   </style>
 </head>
 <body class="fm-page">
@@ -180,7 +197,10 @@
       <section class="fm-card fm-log home-log" aria-label="Live-Transaktionen">
         <header class="fm-log-head">
           <h2 class="fm-log-title">Live-Log<span class="home-log-sub"> — <em>was gerade passiert.</em></span></h2>
-          <span class="fm-status fm-status--wait" id="log-status">Verbinde</span>
+          <div class="home-log-tools">
+            <button type="button" class="home-log-clear" id="log-clear" hidden>Leeren</button>
+            <span class="fm-status fm-status--wait" id="log-status">Verbinde</span>
+          </div>
         </header>
         <div class="fm-log-row fm-log-row--head" role="row">
           <div class="fm-log-cells"><span class="fm-log-time">Zeit</span><span>Vorgang</span><span>Wer</span><span class="fm-log-what">Details</span><span class="fm-log-num">Betrag</span></div>
@@ -274,8 +294,12 @@
     // Live-Log: Transaktionen per Server-Sent Events als Tabellenzeilen
     const log = document.getElementById("log");
     const logStatus = document.getElementById("log-status");
-    const LOG_ROWS = 8; // mehr nicht, damit der QR-Code im Bild bleibt
-    const LOG_LIFETIME_MS = 14000; // danach klappt die Zeile wieder zu
+    const LOG_ROWS = 8; // mehr nicht, damit der QR-Code im Bild bleibt – neue Zeilen verdrängen die ältesten
+    const MERGE_WINDOW_MS = 10000; // Münzen einer Person innerhalb dieser Zeit landen in derselben Zeile
+    const CLEARED_KEY = "flugmodus.logClearedAt";
+    const clearButton = document.getElementById("log-clear");
+    let clearedAt = 0;
+    try { clearedAt = Number(localStorage.getItem(CLEARED_KEY)) || 0; } catch {}
     const emptyNote = log.querySelector(".fm-log-empty");
     // payment_deposited und double_spend_detected kommen, sobald das Backend Einreichungen kennt
     const LOG_KINDS = {
@@ -349,19 +373,13 @@
       if (targetState !== "idle") resizeFrame ||= requestAnimationFrame(() => { resizeFrame = 0; checkSpace(); });
     });
 
-    // Mehrere Münzen einer Person landen in einer Zeile, solange sie lebt: username → { count, total, row }
+    // Mehrere Münzen einer Person kurz hintereinander landen in einer Zeile: username → { count, total, row, last }
     const withdrawals = new Map();
-
-    function scheduleExpiry(row) {
-      clearTimeout(row.expiry);
-      row.expiry = setTimeout(() => removeRow(row), LOG_LIFETIME_MS);
-    }
 
     function showWithdrawal(group, bump) {
       const { row, count, total } = group;
       row.querySelector(".fm-log-what").textContent = count === 1 ? "Münze abgehoben" : `${count} Münzen abgehoben`;
       row.querySelector(".fm-log-amount").textContent = `${total} €`;
-      scheduleExpiry(row); // jede weitere Münze verlängert die Lebensdauer
       // noch am Aufklappen? Dann nur den Text ändern, nicht die Animation abschneiden
       if (!bump || performance.now() - row.born < 700) return;
       row.classList.remove("fm-log-row--fresh", "fm-log-row--bump");
@@ -369,12 +387,16 @@
       row.classList.add("fm-log-row--bump");
     }
 
+    function updateClearButton() {
+      clearButton.hidden = !log.querySelector(".fm-log-row:not(.fm-log-row--leaving)");
+    }
+
     function removeRow(row) {
-      clearTimeout(row.expiry);
       row.onRemove?.();
       if (row.classList.contains("fm-log-row--leaving")) return;
       const done = () => {
         row.remove();
+        updateClearButton();
         if (log.querySelector(".fm-log-row")) return checkSpace();
         log.append(emptyNote);
         idleTimer = setTimeout(() => {
@@ -394,19 +416,23 @@
     function addToLog(event) {
       // id + Zeit als Schlüssel: nach einem Server-Neustart beginnen die ids wieder bei 1
       const key = `${event.id}-${event.time}`;
-      // Rückblick beim Verbinden überspringen – der Log zeigt nur, was jetzt passiert
-      if (event.replay || shown.has(key)) return;
+      if (shown.has(key)) return;
       shown.add(key);
+      // Rückblick beim Laden zeigen (ohne Animation) – außer er wurde hier schon geleert
+      const time = Date.parse(event.time);
+      if (event.replay && time <= clearedAt) return;
+      const fresh = !event.replay;
       let group = null;
       if (event.kind === "coin_issued") {
         group = withdrawals.get(event.username);
-        if (group) {
+        if (group && time - group.last <= MERGE_WINDOW_MS) {
           group.count += 1;
           group.total += event.amount;
-          if (group.row) showWithdrawal(group, true); // sonst übernimmt es die Zeile, sobald sie da ist
+          group.last = time;
+          if (group.row) showWithdrawal(group, fresh); // sonst übernimmt es die Zeile, sobald sie da ist
           return;
         }
-        group = { count: 1, total: event.amount, row: null };
+        group = { count: 1, total: event.amount, row: null, last: time };
         withdrawals.set(event.username, group);
       }
       clearTimeout(idleTimer);
@@ -415,22 +441,33 @@
       ready.then(() => {
         emptyNote.remove();
         const row = logRow(event);
+        if (!fresh) row.classList.remove("fm-log-row--fresh"); // Rückblick: ohne Aufklappen und Funkeln
         row.born = performance.now();
         log.prepend(row);
         if (group) {
           group.row = row;
           row.onRemove = () => withdrawals.get(event.username) === group && withdrawals.delete(event.username);
           showWithdrawal(group, false); // Münzen, die schon während des Aufklappens kamen
-        } else {
-          scheduleExpiry(row);
         }
         trimLog();
-        setTimeout(checkSpace, reducedMotion ? 0 : 650); // nach dem Aufklappen messen
-        if (!reducedMotion) {
+        updateClearButton();
+        setTimeout(checkSpace, reducedMotion || !fresh ? 0 : 650); // nach dem Aufklappen messen
+        if (fresh && !reducedMotion) {
           for (let i = 0; i < 10; i++) setTimeout(() => window.FlugmodusSky?.sparkleAround(row, 30), 250 + i * 60);
         }
       });
     }
+
+    // Leeren: nur in diesem Browser; auch nach dem Neuladen bleibt Älteres weg
+    clearButton.addEventListener("click", () => {
+      clearedAt = Date.now();
+      try { localStorage.setItem(CLEARED_KEY, String(clearedAt)); } catch {}
+      withdrawals.clear();
+      log.querySelectorAll(".fm-log-row").forEach((row) => row.remove());
+      log.append(emptyNote);
+      updateClearButton();
+      goTo("idle");
+    });
 
     const events = new EventSource("/api/events");
     events.onopen = () => {
