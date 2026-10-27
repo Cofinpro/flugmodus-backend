@@ -123,20 +123,11 @@ def parse_hex_values(hex_values: list[str]) -> list[bytes]:
 async def root(request: Request) -> HTMLResponse:
     # Registrieren: Handy-Kamera öffnet direkt die Signup-Seite der App, die Backend-Adresse reist mit.
     # Mit Schrägstrich: GitHub Pages liefert dort dist/signup/index.html ohne Umleitung aus.
-    # Anmelden: wie bisher die Backend-Adresse, für den Scanner in der App.
     signup_link = f"{FRONTEND_URL}/signup/?{urlencode({'backend': BACKEND_PUBLIC_URL})}"
-    qr = {
-        mode: segno.make(content, error="m").svg_inline(
-            scale=8, border=0, dark="#121419", omitsize=True
-        )
-        for mode, content in {
-            "signup": signup_link,
-            "signin": BACKEND_PUBLIC_URL,
-        }.items()
-    }
-    return templates.TemplateResponse(
-        request, "home.html", {"signup_qr": qr["signup"], "signin_qr": qr["signin"]}
+    signup_qr = segno.make(signup_link, error="m").svg_inline(
+        scale=8, border=0, dark="#121419", omitsize=True
     )
+    return templates.TemplateResponse(request, "home.html", {"signup_qr": signup_qr})
 
 
 @app.post(
